@@ -1,0 +1,71 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+As this project is pre-1.0, minor versions may introduce breaking changes.
+
+## [Unreleased]
+
+## [0.3.0] - 2026-07-12
+
+### Added
+
+- Auth rate limiting on login and registration — enforced in the server actions
+  and, non-bypassably, in the credentials `authorize` callback.
+- Nonce-based Content-Security-Policy with `strict-dynamic`, HSTS, and
+  `X-Powered-By` disabled.
+- Case-insensitive `lower(email)` unique index (defense in depth).
+- Accessible mobile drawer: focus trap, Escape to close, focus restore, and a
+  skip-to-content link.
+- Structured-logging shim and graceful database-pool shutdown on SIGTERM.
+- Renovate, CodeQL, commitlint (Conventional Commits), and a CI dependency audit.
+- Contributor docs: CONTRIBUTING, SECURITY, and issue/PR templates.
+- Tests for auth error paths and rate limiting.
+
+### Changed
+
+- `getCurrentSession` now treats only undecryptable cookies as signed-out;
+  genuine errors surface instead of being swallowed.
+- Registration relies on the unique constraint (handles the duplicate-signup
+  race) and returns a clean error.
+- Documentation expanded with a security model and session-revocation notes.
+
+### Fixed
+
+- Service worker no longer reloads on its initial claim (fixed a sign-out race).
+
+## [0.2.0] - 2026-07-11
+
+### Added
+
+- Progressive Web App: web manifest, generated icons, a service worker with
+  auth-safe caching, an offline fallback, and an install prompt.
+- Minimal, borderless responsive app shell (sidebar + topbar with a mobile
+  drawer) with PWA safe-area handling.
+- MIT license.
+
+### Fixed
+
+- Resilient session handling and error boundaries (`error.tsx`,
+  `global-error.tsx`, `not-found.tsx`) — resolves a Next.js 16 Turbopack
+  global-error crash.
+
+### Changed
+
+- README restructured into a `docs/` directory.
+
+## [0.1.0] - 2026-07-11
+
+### Added
+
+- Initial production-grade Next.js 16 boilerplate: App Router, Auth.js v5
+  credentials auth (Argon2id, JWT sessions), Drizzle ORM + PostgreSQL,
+  Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
+  and a GitHub Actions CI pipeline.
+
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/releases/tag/v0.1.0

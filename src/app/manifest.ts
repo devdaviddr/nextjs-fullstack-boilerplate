@@ -16,6 +16,14 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#ffffff',
     theme_color: '#0f172a',
     categories: ['productivity', 'developer'],
+    shortcuts: [
+      {
+        name: 'Dashboard',
+        short_name: 'Dashboard',
+        url: '/dashboard',
+        icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+    ],
     icons: [
       {
         src: '/icon-192.png',

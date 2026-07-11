@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "labels": ["dependencies"],
+  "schedule": ["before 6am on monday"],
+  "packageRules": [
+    {
+      "description": "Group non-major updates into a single PR",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "non-major dependencies"
+    },
+    {
+      "description": "Require manual review for major bumps",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  }
+}

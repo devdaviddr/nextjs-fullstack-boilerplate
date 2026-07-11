@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   index,
@@ -37,7 +38,12 @@ export const users = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [uniqueIndex('users_email_unique_idx').on(table.email)],
+  (table) => [
+    uniqueIndex('users_email_unique_idx').on(table.email),
+    // Defense in depth: enforce case-insensitive uniqueness even if a row is
+    // ever inserted without the app's email lowercasing.
+    uniqueIndex('users_email_lower_idx').on(sql`lower(${table.email})`),
+  ],
 )
 
 export const accounts = pgTable(

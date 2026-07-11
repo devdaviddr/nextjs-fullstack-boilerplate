@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 
@@ -12,8 +12,8 @@ const BRAND = 'Boilerplate'
 
 /**
  * Minimal, borderless app shell: a fixed sidebar on desktop that collapses to
- * an off-canvas drawer on mobile, plus a sticky topbar. Handles PWA safe-area
- * insets so nothing is obscured by a notch in standalone mode.
+ * an accessible off-canvas drawer on mobile, plus a sticky topbar. Handles PWA
+ * safe-area insets so nothing is obscured by a notch in standalone mode.
  */
 export function AppShell({
   user,
@@ -26,6 +26,10 @@ export function AppShell({
   const pathname = usePathname()
   const [lastPathname, setLastPathname] = useState(pathname)
 
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+
   // Close the drawer on navigation by adjusting state during render (the
   // React-recommended alternative to a setState-in-effect).
   if (pathname !== lastPathname) {
@@ -33,16 +37,53 @@ export function AppShell({
     setOpen(false)
   }
 
-  // Lock body scroll while the drawer is open.
+  // Drawer: lock scroll, trap focus, close on Escape, and restore focus.
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
+    if (!open) return
+
+    // Capture the trigger now so cleanup restores focus to a stable node.
+    const trigger = menuButtonRef.current
+    closeButtonRef.current?.focus()
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        return
+      }
+      if (event.key !== 'Tab' || !drawerRef.current) return
+      const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]!
+      const last = focusable[focusable.length - 1]!
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
     return () => {
       document.body.style.overflow = ''
+      document.removeEventListener('keydown', onKeyDown)
+      trigger?.focus()
     }
   }, [open])
 
   return (
     <div className="min-h-dvh">
+      <a
+        href="#main-content"
+        className="focus:bg-background sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:rounded-md focus:px-3 focus:py-2 focus:shadow"
+      >
+        Skip to content
+      </a>
+
       {/* Desktop sidebar */}
       <aside className="bg-muted/30 fixed inset-y-0 left-0 z-30 hidden w-60 flex-col px-3 pt-[calc(env(safe-area-inset-top)_+_1rem)] pb-[env(safe-area-inset-bottom)] md:flex">
         <div className="px-2 pb-4 text-lg font-semibold tracking-tight">
@@ -67,6 +108,10 @@ export function AppShell({
           )}
         />
         <aside
+          ref={drawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Main navigation"
           className={cn(
             'bg-background absolute inset-y-0 left-0 flex w-64 max-w-[80%] flex-col px-3 pt-[calc(env(safe-area-inset-top)_+_1rem)] pb-[env(safe-area-inset-bottom)] shadow-xl transition-transform duration-200 ease-out',
             open ? 'translate-x-0' : '-translate-x-full',
@@ -77,6 +122,7 @@ export function AppShell({
               {BRAND}
             </span>
             <button
+              ref={closeButtonRef}
               aria-label="Close menu"
               onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground"
@@ -93,7 +139,9 @@ export function AppShell({
         <header className="bg-background/80 sticky top-0 z-20 pt-[env(safe-area-inset-top)] backdrop-blur">
           <div className="flex h-14 items-center gap-2 px-4 sm:px-6">
             <button
+              ref={menuButtonRef}
               aria-label="Open menu"
+              aria-expanded={open}
               onClick={() => setOpen(true)}
               className="text-muted-foreground hover:text-foreground -ml-1 p-1 md:hidden"
             >
@@ -109,7 +157,11 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)] sm:px-6">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 px-4 py-6 pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)] outline-none sm:px-6"
+        >
           {children}
         </main>
       </div>

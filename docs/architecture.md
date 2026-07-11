@@ -61,10 +61,34 @@ Key properties:
 
 - Passwords never stored in plaintext (Argon2id only).
 - Auth cookies are HTTP-only, encrypted JWTs (Auth.js defaults).
-- Hardened response headers (`X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`) set in `next.config.ts`.
-- Environment validated at boot (`src/lib/env.ts`) — the app refuses to start with a missing/invalid secret or DB URL.
-- Service worker **never caches** authenticated HTML or API responses (see [PWA](pwa.md#caching-strategy)).
-- Sensitive files are git- and docker-ignored; the Docker image runs as a non-root user.
+- **Rate limiting** on auth: the server actions cap attempts for a friendly
+  message, and the credentials `authorize` callback caps them again so the raw
+  `/api/auth/callback/credentials` endpoint can't be brute-forced by bypassing
+  the UI (`src/lib/rate-limit.ts`). The default limiter is in-memory
+  (single-instance); swap in a shared store (Upstash) for multi-instance.
+- **Content-Security-Policy** with a per-request nonce + `strict-dynamic` in
+  production (looser in dev for HMR), plus `Strict-Transport-Security`,
+  `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, and
+  `Permissions-Policy`. CSP is set in `proxy.ts`; the static headers in
+  `next.config.ts`. `X-Powered-By` is disabled.
+- **Registration** relies on the unique index as the source of truth — a
+  concurrent duplicate signup is caught (`23505`) and returns a clean error, not
+  a 500. Emails are stored lower-cased with a functional `lower(email)` unique
+  index for case-insensitive uniqueness.
+- Environment validated at boot (`src/lib/env.ts`) — the app refuses to start
+  with a missing/invalid secret or DB URL.
+- Service worker **never caches** authenticated HTML or API responses (see
+  [PWA](pwa.md#caching-strategy)).
+- Sensitive files are git- and docker-ignored; the Docker image runs as a
+  non-root user.
+
+### Session strategy & revocation
+
+Sessions are **stateless JWTs**, so they cannot be revoked server-side before
+expiry — there is no "log out all devices" or instant ban. This is the right
+default for a credentials app (no DB round-trip per request). If you need
+revocation, switch to database sessions: enable `DrizzleAdapter(db)`, change the
+session strategy to `"database"`, and the existing `sessions` table is used.
 
 ## Project structure
 

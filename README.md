@@ -93,12 +93,12 @@ Full tree and rationale in **[Architecture](docs/architecture.md)**.
 ## Roadmap
 
 - [x] Credentials auth · Drizzle/Postgres · Docker · CI · PWA · responsive app shell
+- [x] Auth rate limiting · nonce CSP + HSTS · structured-logging shim
 - [ ] OAuth providers (GitHub, Google) — schema is already adapter-ready
 - [ ] Email verification & password reset
-- [ ] Rate limiting on auth routes
 - [ ] Role-based access control (RBAC)
 - [ ] Web Push notifications (service-worker hooks are in place)
-- [ ] Observability — Sentry + structured logging
+- [ ] Shared-store rate limiting (Upstash) & error tracking (Sentry)
 - [ ] Dark-mode toggle & theming
 - [ ] Internationalization (i18n)
 

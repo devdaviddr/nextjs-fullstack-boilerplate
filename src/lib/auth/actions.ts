@@ -2,12 +2,15 @@
 
 import { eq } from 'drizzle-orm'
 import { AuthError } from 'next-auth'
+import { headers } from 'next/headers'
 
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { signIn, signOut } from '@/lib/auth'
 import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
+import { logger } from '@/lib/logger'
+import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { loginSchema, registerSchema } from '@/lib/validations/auth'
 
 /**
@@ -25,6 +28,16 @@ function isNextRedirect(error: unknown): boolean {
   )
 }
 
+/** Postgres unique-violation SQLSTATE (surfaced by postgres-js as `.code`). */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code: unknown }).code === '23505'
+  )
+}
+
 function collectFieldErrors(
   issues: { path: PropertyKey[]; message: string }[],
 ): Record<string, string[]> {
@@ -35,6 +48,16 @@ function collectFieldErrors(
   }
   return fieldErrors
 }
+
+/** Best-effort client IP from proxy headers (falls back to a shared bucket). */
+async function clientIp(): Promise<string> {
+  const h = await headers()
+  const forwarded = h.get('x-forwarded-for')
+  if (forwarded) return forwarded.split(',')[0]!.trim()
+  return h.get('x-real-ip') ?? 'unknown'
+}
+
+const TOO_MANY = 'Too many attempts. Please wait a few minutes and try again.'
 
 /**
  * Register a new credentials user, then sign them in. On success this throws a
@@ -53,8 +76,20 @@ export async function registerAction(
     }
   }
 
+  const ip = await clientIp()
+  const limit = rateLimit(
+    `register:${ip}`,
+    AUTH_LIMITS.register.limit,
+    AUTH_LIMITS.register.windowMs,
+  )
+  if (!limit.success) {
+    logger.warn('Registration rate limit exceeded', { ip })
+    return { status: 'error', message: TOO_MANY }
+  }
+
   const { name, email, password } = parsed.data
 
+  // Fast path — avoid an expensive hash on the common "already taken" case.
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
     columns: { id: true },
@@ -67,7 +102,21 @@ export async function registerAction(
   }
 
   const hashedPassword = await hashPassword(password)
-  await db.insert(users).values({ name, email, hashedPassword })
+
+  // The unique index is the source of truth — catch the race where two
+  // concurrent signups both pass the check above.
+  try {
+    await db.insert(users).values({ name, email, hashedPassword })
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return {
+        status: 'error',
+        message: 'An account with this email already exists.',
+      }
+    }
+    logger.error('Registration insert failed', { error: String(error) })
+    return { status: 'error', message: 'Could not create your account.' }
+  }
 
   try {
     await signIn('credentials', { email, password, redirectTo: '/dashboard' })
@@ -100,12 +149,21 @@ export async function loginAction(
     }
   }
 
+  const { email, password } = parsed.data
+
+  const ip = await clientIp()
+  const limit = rateLimit(
+    `login:${ip}:${email}`,
+    AUTH_LIMITS.login.limit,
+    AUTH_LIMITS.login.windowMs,
+  )
+  if (!limit.success) {
+    logger.warn('Login rate limit exceeded', { ip, email })
+    return { status: 'error', message: TOO_MANY }
+  }
+
   try {
-    await signIn('credentials', {
-      email: parsed.data.email,
-      password: parsed.data.password,
-      redirectTo: '/dashboard',
-    })
+    await signIn('credentials', { email, password, redirectTo: '/dashboard' })
   } catch (error) {
     if (isNextRedirect(error)) throw error
     if (error instanceof AuthError) {

@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   // Keep the native argon2 addon out of the bundler so its platform-specific
   // .node binary is resolved from node_modules (and traced into standalone).
   serverExternalPackages: ['@node-rs/argon2'],
+  // Don't advertise the framework.
+  poweredByHeader: false,
   // Fail the production build on type errors instead of silently shipping them.
   typescript: {
     ignoreBuildErrors: false,
@@ -28,6 +30,12 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            // Force HTTPS for two years (browsers ignore this over plain HTTP,
+            // so it's safe in local dev). Consider submitting to the preload list.
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
         ],
       },
