@@ -1,0 +1,45 @@
+'use client'
+
+import { useEffect } from 'react'
+
+/**
+ * Registers the service worker on the client. Uses `updateViaCache: 'none'`
+ * so the browser always revalidates /sw.js and users pick up new versions.
+ * When a new SW is waiting, it is activated and the page reloaded once.
+ */
+export function ServiceWorkerRegister() {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return
+    if (!('serviceWorker' in navigator)) return
+
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      window.location.reload()
+    })
+
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/', updateViaCache: 'none' })
+      .then((registration) => {
+        registration.addEventListener('updatefound', () => {
+          const installing = registration.installing
+          if (!installing) return
+          installing.addEventListener('statechange', () => {
+            // A new SW is installed while an old one still controls the page.
+            if (
+              installing.state === 'installed' &&
+              navigator.serviceWorker.controller
+            ) {
+              registration.waiting?.postMessage('SKIP_WAITING')
+            }
+          })
+        })
+      })
+      .catch((error) => {
+        console.error('Service worker registration failed:', error)
+      })
+  }, [])
+
+  return null
+}

@@ -18,7 +18,8 @@ test('register → dashboard → sign out → sign in', async ({ page }) => {
   await page.getByRole('button', { name: 'Create account' }).click()
 
   await expect(page).toHaveURL(/\/dashboard/)
-  await expect(page.getByText(email)).toBeVisible()
+  // Email appears in both the topbar and the card — scope to the main content.
+  await expect(page.getByRole('main').getByText(email)).toBeVisible()
 
   // Sign out
   await page.getByRole('button', { name: 'Sign out' }).click()

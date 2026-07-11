@@ -1,19 +1,16 @@
+'use client'
+
 import { LogOut } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { signOut } from '@/lib/auth'
+import { signOutAction } from '@/lib/auth/actions'
 
 export function SignOutButton() {
   return (
-    <form
-      action={async () => {
-        'use server'
-        await signOut({ redirectTo: '/login' })
-      }}
-    >
-      <Button type="submit" variant="outline" size="sm">
+    <form action={signOutAction}>
+      <Button type="submit" variant="ghost" size="sm">
         <LogOut />
-        Sign out
+        <span className="hidden sm:inline">Sign out</span>
       </Button>
     </form>
   )

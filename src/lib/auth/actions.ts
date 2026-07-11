@@ -5,7 +5,7 @@ import { AuthError } from 'next-auth'
 
 import { db } from '@/db'
 import { users } from '@/db/schema'
-import { signIn } from '@/lib/auth'
+import { signIn, signOut } from '@/lib/auth'
 import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
 import { loginSchema, registerSchema } from '@/lib/validations/auth'
@@ -80,6 +80,11 @@ export async function registerAction(
     }
   }
   return { status: 'idle' }
+}
+
+/** Sign the current user out and redirect to the login page. */
+export async function signOutAction() {
+  await signOut({ redirectTo: '/login' })
 }
 
 /** Authenticate an existing user with email + password. */
