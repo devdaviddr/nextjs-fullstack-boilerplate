@@ -1,0 +1,8 @@
+# pnpm 11 reads package-level settings from here rather than package.json.
+# Allow only these trusted native-addon packages to run install/build scripts.
+allowBuilds:
+  '@node-rs/argon2': true
+  '@tailwindcss/oxide': true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
