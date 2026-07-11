@@ -92,6 +92,19 @@ src/
 
 Full tree and rationale in **[Architecture](docs/architecture.md)**.
 
+## Deployment
+
+Serve the Docker stack on a Cloudflare domain via **Cloudflare Tunnel** — no
+open ports, no reverse proxy, no certs. An instant public preview needs no
+Cloudflare account:
+
+```bash
+make tunnel-quick   # → https://<random>.trycloudflare.com
+```
+
+For a custom domain there are guided (dashboard) and one-command (Terraform)
+paths. Full setup and usage: **[Deployment](docs/deployment.md)**.
+
 ## Roadmap
 
 - [x] Credentials auth · Drizzle/Postgres · Docker · CI · PWA · responsive app shell
