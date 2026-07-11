@@ -6,12 +6,16 @@ FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+# Skip git hooks (husky) inside the container — there is no .git here.
+ENV HUSKY=0
 RUN corepack enable
 WORKDIR /app
 
 # ---------- Dependencies ----------
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml carries the `allowBuilds` approvals for native addons;
+# without it pnpm refuses to run their install scripts under --frozen-lockfile.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -19,12 +23,14 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# A build-time placeholder — real secrets are injected at runtime. Next only
-# needs these present so the standalone build succeeds; they are not baked in.
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
-ENV AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime"
-RUN pnpm build
+# Env validation runs at import time, so `next build` needs these vars present.
+# We pass throwaway placeholders inline on the RUN line so they are scoped to
+# this single command — never persisted to a layer's env. Real secrets are
+# injected at runtime in the runner stage.
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
+    AUTH_SECRET="placeholder-not-used-at-runtime" \
+    pnpm build
 
 # ---------- Runner ----------
 FROM base AS runner
