@@ -1,10 +1,10 @@
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { auth } from '@/lib/auth'
+import { getCurrentSession } from '@/lib/auth/session'
 
 export default async function HomePage() {
-  const session = await auth()
+  const session = await getCurrentSession()
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8 text-center">

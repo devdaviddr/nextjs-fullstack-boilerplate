@@ -1,195 +1,117 @@
+<div align="center">
+
 # Next.js Full-Stack Boilerplate
 
-A production-grade starting point for full-stack web apps: **Next.js 16** (App
-Router, RSC, Server Actions), **Auth.js v5** email/password auth with
-**Argon2id** hashing, **Drizzle ORM** on **PostgreSQL**, **TypeScript** in
-strict mode, **Tailwind CSS v4** + **shadcn/ui**, and a full **Docker** +
-**CI** setup.
+A production-grade starting point for full-stack web apps — authentication, database, PWA, Docker, and CI wired up and tested, so you can start building features on day one.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-20232a?logo=react&logoColor=61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169e1?logo=postgresql&logoColor=white)
+![Auth.js](https://img.shields.io/badge/Auth.js-v5-000000?logo=auth0&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwindcss&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-ready-5a0fc8?logo=pwa&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+
+</div>
 
 ---
 
-## Stack
+## What it is
 
-| Concern       | Choice                                                  |
-| ------------- | ------------------------------------------------------- |
-| Framework     | Next.js 16 (App Router, React 19, Turbopack)            |
-| Language      | TypeScript 5.9 (`strict`, `noUncheckedIndexedAccess`)   |
-| Auth          | Auth.js (NextAuth) v5 — Credentials + JWT sessions      |
-| Password hash | Argon2id (`@node-rs/argon2`, OWASP params)              |
-| Database      | PostgreSQL 17                                           |
-| ORM           | Drizzle ORM + drizzle-kit migrations                    |
-| Validation    | Zod (shared client/server schemas)                      |
-| UI            | Tailwind CSS v4 + shadcn/ui (new-york)                  |
-| Unit tests    | Vitest + Testing Library                                |
-| E2E tests     | Playwright                                              |
-| Tooling       | ESLint (flat) · Prettier · Husky · lint-staged          |
-| Container     | Multi-stage Dockerfile (standalone, non-root) + Compose |
-| CI            | GitHub Actions (lint · typecheck · unit · e2e · docker) |
+An opinionated, batteries-included template built on **Next.js 16** (App Router, RSC, Server Actions) with:
 
-## Requirements
+- 🔐 **Email + password auth** via Auth.js v5 — Argon2id hashing, JWT sessions, edge-protected routes
+- 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema, committed migrations
+- 📱 **PWA + responsive app shell** — installable, offline-resilient, mobile-to-desktop layout
+- 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
+- 🐳 **Docker + CI** — multi-stage image, GitHub Actions pipeline
+- 🛡️ **Strict TypeScript**, ESLint, Prettier, and pre-commit hooks
 
-- Node.js ≥ 20.9 (22 recommended)
-- pnpm ≥ 9 (`corepack enable`)
-- Docker (for the local database)
+Everything is verified end to end — auth flow, container, and PWA all proven working, not just scaffolded. See **[Features](docs/features.md)** for the full list.
 
 ## Quick start
 
+**Prerequisites:** Node ≥ 20.9 (22 recommended) · [pnpm](https://pnpm.io) (`corepack enable`) · Docker
+
 ```bash
-# 1. Install dependencies
+# 1. Install
 pnpm install
 
 # 2. Configure environment
 cp .env.example .env
-# generate a real secret and paste it into AUTH_SECRET:
-npx auth secret            # or: openssl rand -base64 33
+npx auth secret            # generates AUTH_SECRET — paste into .env
 
-# 3. Start Postgres
-pnpm docker:db             # docker compose up -d db
-
-# 4. Apply the schema
+# 3. Start Postgres, apply schema, seed a demo user
+pnpm docker:db
 pnpm db:migrate
+pnpm db:seed                # → demo@example.com / Password123
 
-# 5. (optional) Seed a demo user  → demo@example.com / Password123
-pnpm db:seed
-
-# 6. Run the app
-pnpm dev                   # http://localhost:3000
+# 4. Run
+pnpm dev                    # http://localhost:3000
 ```
+
+Sign in with the demo account, or register a new one at `/register`.
+For the installable PWA (service worker is production-only): `pnpm build && pnpm start`.
+
+## Documentation
+
+| Doc                                         | What's inside                                                |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| 📋 **[Features](docs/features.md)**         | Complete feature list and what's included                    |
+| 🏛️ **[Architecture](docs/architecture.md)** | Request flow, auth design, security model, project structure |
+| 🗄️ **[Database](docs/database.md)**         | Schema, migrations, Drizzle workflow, seeding                |
+| 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
+| 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
+
+## Tech stack
+
+| Layer      | Choice                                                     |
+| ---------- | ---------------------------------------------------------- |
+| Framework  | Next.js 16 · React 19 · TypeScript 5.9 (strict)            |
+| Auth       | Auth.js (NextAuth) v5 — Credentials + JWT, Argon2id        |
+| Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                  |
+| UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                 |
+| Validation | Zod (shared client/server schemas)                         |
+| Testing    | Vitest + Testing Library · Playwright                      |
+| Tooling    | ESLint (flat) · Prettier · Husky · lint-staged             |
+| Delivery   | Multi-stage Docker (standalone, non-root) · GitHub Actions |
 
 ## Project structure
 
 ```
 src/
-├── app/
-│   ├── (auth)/            # login + register (route group, shared layout)
-│   ├── (dashboard)/       # protected app area
-│   ├── api/
-│   │   ├── auth/[...nextauth]/   # Auth.js endpoints
-│   │   └── health/        # DB-backed liveness probe
-│   ├── layout.tsx · page.tsx · globals.css
-├── components/
-│   ├── auth/              # forms, submit button, field errors
-│   └── ui/                # shadcn/ui primitives
-├── db/
-│   ├── schema.ts          # Drizzle schema (Auth.js-adapter compatible)
-│   ├── index.ts           # pooled client (singleton)
-│   ├── migrate.ts · seed.ts
-├── lib/
-│   ├── auth/
-│   │   ├── config.ts      # EDGE-safe config (used by proxy)
-│   │   ├── index.ts       # full Node config + Credentials provider
-│   │   ├── password.ts    # Argon2id hash/verify
-│   │   └── actions.ts     # register / login server actions
-│   ├── validations/       # Zod schemas
-│   ├── env.ts             # validated environment (fail fast)
-│   └── utils.ts
-├── proxy.ts               # edge route protection (Next 16 "proxy")
-└── types/next-auth.d.ts   # session typing
+├── app/            # App Router: (auth) + (dashboard) groups, api/, PWA manifest & offline
+├── components/     # auth · pwa · shell · ui (shadcn)
+├── db/             # Drizzle schema, client, migrate & seed scripts
+├── lib/            # auth (config/actions/session), validations, env, shell nav, utils
+└── proxy.ts        # edge route protection (Next 16 "proxy" convention)
 ```
 
-## Authentication design
+Full tree and rationale in **[Architecture](docs/architecture.md)**.
 
-- **Argon2id** (memory-hard) for password hashing with OWASP-recommended
-  parameters (`src/lib/auth/password.ts`).
-- **JWT session strategy** — required for the Credentials provider; the session
-  carries the user id via typed `jwt`/`session` callbacks.
-- **Edge/Node split** — `proxy.ts` imports only `auth/config.ts`
-  (no DB, no native crypto), so route protection runs on the edge. The
-  Credentials provider, database, and Argon2 live in the Node-only
-  `auth/index.ts`.
-- **Defence in depth** — the proxy (edge) guards `/dashboard`, _and_ the page
-  re-checks the session server-side.
-- **User-enumeration resistance** — a failed lookup still performs a dummy
-  Argon2 verify so response timing doesn't leak whether an email exists.
-- **Adapter-ready schema** — the `users/accounts/sessions/verificationTokens`
-  tables match the Auth.js Drizzle adapter, so adding GitHub/Google OAuth later
-  is a few lines (see the note in `src/lib/auth/index.ts`).
+## Roadmap
 
-## Database & migrations
+- [x] Credentials auth · Drizzle/Postgres · Docker · CI · PWA · responsive app shell
+- [ ] OAuth providers (GitHub, Google) — schema is already adapter-ready
+- [ ] Email verification & password reset
+- [ ] Rate limiting on auth routes
+- [ ] Role-based access control (RBAC)
+- [ ] Web Push notifications (service-worker hooks are in place)
+- [ ] Observability — Sentry + structured logging
+- [ ] Dark-mode toggle & theming
+- [ ] Internationalization (i18n)
+
+## Contributing
+
+Commits run ESLint + Prettier via a Husky `pre-commit` hook. Before opening a PR:
 
 ```bash
-pnpm db:generate   # generate SQL migrations from schema changes
-pnpm db:migrate    # apply pending migrations
-pnpm db:push       # push schema without a migration (prototyping only)
-pnpm db:studio     # open Drizzle Studio
-pnpm db:seed       # insert the demo user
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-Migrations are committed under `drizzle/`. Generate a new one whenever you edit
-`src/db/schema.ts`.
+See **[Usage & Development](docs/usage.md)** for the full workflow.
 
-## Testing
+## License
 
-```bash
-pnpm test           # unit tests (Vitest)
-pnpm test:coverage  # unit tests with coverage
-pnpm test:e2e       # Playwright (needs a migrated DB + built app)
-```
-
-The E2E flow registers a user, verifies the dashboard, signs out, and signs
-back in. Run against a live database:
-
-```bash
-pnpm docker:db && pnpm db:migrate && pnpm build && pnpm test:e2e
-```
-
-## Quality gates
-
-```bash
-pnpm lint            # ESLint (flat config)
-pnpm typecheck       # tsc --noEmit
-pnpm format          # Prettier write
-```
-
-Husky + lint-staged run ESLint and Prettier on staged files at commit time
-(`pnpm dlx husky` is wired via the `prepare` script on install).
-
-## Docker
-
-**Just the database (local dev):**
-
-```bash
-pnpm docker:db
-```
-
-**Full stack (app + db + migrations), production-like:**
-
-```bash
-AUTH_SECRET=$(openssl rand -base64 33) \
-  docker compose -f docker-compose.prod.yml up --build
-```
-
-The app image is a multi-stage build using Next.js `standalone` output, runs as
-a non-root user, and ships a `/api/health` container healthcheck. A one-shot
-`migrate` service applies migrations before the app starts.
-
-## Environment variables
-
-| Variable          | Required | Notes                                      |
-| ----------------- | :------: | ------------------------------------------ |
-| `DATABASE_URL`    |    ✅    | Postgres connection string                 |
-| `AUTH_SECRET`     |    ✅    | `npx auth secret` — rotate per environment |
-| `AUTH_URL`        |    –     | Canonical URL; set in production           |
-| `AUTH_TRUST_HOST` |    –     | `true` behind a trusted proxy / in Docker  |
-| `NODE_ENV`        |    –     | `development` \| `test` \| `production`    |
-
-All variables are validated at boot in `src/lib/env.ts` — a missing or invalid
-value fails fast with a readable error.
-
-## Production checklist
-
-- [ ] Set a unique, strong `AUTH_SECRET` per environment (never reuse).
-- [ ] Point `DATABASE_URL` at managed Postgres with TLS (`sslmode=require`).
-- [ ] Run `pnpm db:migrate` as a deploy step (the Compose `migrate` service
-      shows the pattern).
-- [ ] Terminate TLS at a trusted proxy and set `AUTH_TRUST_HOST=true`.
-- [ ] Add rate limiting to the login/register routes (e.g. Upstash) before
-      going public.
-- [ ] Wire error tracking (Sentry) and structured logging.
-
-## Extending
-
-- **Add OAuth:** enable `DrizzleAdapter(db)` and add providers in
-  `src/lib/auth/index.ts`.
-- **Add a shadcn component:** `pnpm dlx shadcn@latest add <name>`.
-- **Add a table:** edit `src/db/schema.ts`, then `pnpm db:generate && pnpm db:migrate`.
+Released under the [MIT License](LICENSE).

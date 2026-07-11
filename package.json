@@ -1,7 +1,8 @@
 {
   "name": "nextjs-fullstack-boilerplate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20.9.0"
@@ -26,6 +27,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
+    "gen:icons": "node scripts/generate-icons.mjs",
     "docker:db": "docker compose up -d db",
     "prepare": "husky || true"
   },
@@ -70,6 +72,7 @@
     "lint-staged": "16.2.4",
     "prettier": "3.9.5",
     "prettier-plugin-tailwindcss": "0.8.0",
+    "sharp": "0.34.5",
     "tailwindcss": "4.3.2",
     "tsx": "4.20.3",
     "typescript": "5.9.3",
