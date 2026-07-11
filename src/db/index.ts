@@ -13,6 +13,7 @@ import * as schema from './schema'
  */
 const globalForDb = globalThis as unknown as {
   client: ReturnType<typeof postgres> | undefined
+  shutdownHooked: boolean | undefined
 }
 
 const client =
@@ -25,6 +26,21 @@ const client =
 
 if (env.NODE_ENV !== 'production') {
   globalForDb.client = client
+}
+
+// Close the pool on shutdown so in-flight queries can drain. Guarded so hot
+// reloads don't stack duplicate listeners.
+if (
+  !globalForDb.shutdownHooked &&
+  typeof process !== 'undefined' &&
+  typeof process.on === 'function'
+) {
+  globalForDb.shutdownHooked = true
+  const close = () => {
+    void client.end({ timeout: 5 })
+  }
+  process.once('SIGTERM', close)
+  process.once('SIGINT', close)
 }
 
 export const db = drizzle(client, {
