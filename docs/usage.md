@@ -12,13 +12,15 @@
 
 Copy `.env.example` → `.env`. All variables are validated at boot in `src/lib/env.ts` — a missing or malformed value fails fast with a readable error.
 
-| Variable          | Required | Notes                                                   |
-| ----------------- | :------: | ------------------------------------------------------- |
-| `DATABASE_URL`    |    ✅    | Postgres connection string                              |
-| `AUTH_SECRET`     |    ✅    | `npx auth secret` — unique per environment, never reuse |
-| `AUTH_URL`        |    –     | Canonical URL; set in production                        |
-| `AUTH_TRUST_HOST` |    –     | `true` behind a trusted proxy / in Docker               |
-| `NODE_ENV`        |    –     | `development` \| `test` \| `production`                 |
+| Variable              | Required | Notes                                                   |
+| --------------------- | :------: | ------------------------------------------------------- |
+| `DATABASE_URL`        |    ✅    | Postgres connection string                              |
+| `AUTH_SECRET`         |    ✅    | `npx auth secret` — unique per environment, never reuse |
+| `AUTH_URL`            |    –     | Canonical URL; set in production                        |
+| `AUTH_TRUST_HOST`     |    –     | `true` behind a trusted proxy / in Docker               |
+| `NODE_ENV`            |    –     | `development` \| `test` \| `production`                 |
+| `LOG_LEVEL`           |    –     | `debug` \| `info` \| `warn` \| `error`                  |
+| `RATE_LIMIT_DISABLED` |    –     | `true` to disable the in-memory auth rate limiter       |
 
 ## Scripts
 
@@ -98,7 +100,9 @@ Husky installs a `pre-commit` hook that runs **lint-staged** (ESLint + Prettier 
 - [ ] `DATABASE_URL` on managed Postgres with TLS (`sslmode=require`).
 - [ ] Run `pnpm db:migrate` as a deploy step.
 - [ ] Terminate TLS at a trusted proxy; set `AUTH_TRUST_HOST=true`.
-- [ ] Add rate limiting to login/register (e.g. Upstash).
-- [ ] Wire error tracking (Sentry) and structured logging.
+- [ ] Swap the in-memory rate limiter for a shared store (e.g. Upstash) if you
+      run more than one instance.
+- [ ] Wire error tracking (Sentry) — a structured-logging shim (`src/lib/logger.ts`)
+      is already in place.
 - [ ] Serve over HTTPS so the service worker registers and the app is installable.
 - [ ] Replace placeholder icons (`pnpm gen:icons`) and set the manifest name/colors.
