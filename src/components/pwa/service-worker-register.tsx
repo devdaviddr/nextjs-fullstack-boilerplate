@@ -12,9 +12,13 @@ export function ServiceWorkerRegister() {
     if (process.env.NODE_ENV !== 'production') return
     if (!('serviceWorker' in navigator)) return
 
+    // Only reload when an *updated* worker takes over — not on the first
+    // install's initial claim (which would reload the page on first visit and
+    // can race in-flight navigations like sign-out).
+    const hadController = !!navigator.serviceWorker.controller
     let refreshing = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return
+      if (refreshing || !hadController) return
       refreshing = true
       window.location.reload()
     })
