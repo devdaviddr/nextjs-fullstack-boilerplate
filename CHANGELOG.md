@@ -8,6 +8,15 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-12
+
+### Added
+
+- `CLAUDE.md` with repo context, conventions, and a gitflow/commit guide for AI
+  assistants working in this repository.
+- graphify integration for Claude Code (`.claude/settings.json` PreToolUse
+  hooks) that queries the knowledge graph before browsing source.
+
 ## [0.3.0] - 2026-07-12
 
 ### Added
@@ -65,7 +74,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/releases/tag/v0.1.0
