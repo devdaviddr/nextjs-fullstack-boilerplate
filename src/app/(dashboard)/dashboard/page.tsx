@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
-import { SignOutButton } from '@/components/auth/sign-out-button'
 import {
   Card,
   CardContent,
@@ -9,31 +8,27 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { auth } from '@/lib/auth'
+import { getCurrentSession } from '@/lib/auth/session'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
-  const session = await auth()
+  const session = await getCurrentSession()
 
-  // Defence in depth: middleware already guards this route, but never trust a
-  // page to be reached only through the middleware.
+  // The shell layout already guards this route; re-check as defense in depth.
   if (!session?.user) {
     redirect('/login')
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <SignOutButton />
-      </header>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <Card>
         <CardHeader>
           <CardTitle>You are signed in</CardTitle>
           <CardDescription>
-            This route is protected by middleware and a server-side session
+            This route is protected by the edge proxy and a server-side session
             check.
           </CardDescription>
         </CardHeader>
@@ -52,6 +47,6 @@ export default async function DashboardPage() {
           </p>
         </CardContent>
       </Card>
-    </main>
+    </div>
   )
 }

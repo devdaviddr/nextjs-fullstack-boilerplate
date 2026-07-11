@@ -10,7 +10,7 @@ import type { NextAuthConfig } from 'next-auth'
  */
 
 /** Routes that require an authenticated session. */
-const PROTECTED_PREFIXES = ['/dashboard']
+const PROTECTED_PREFIXES = ['/dashboard', '/settings']
 
 /** Auth pages an already-signed-in user should be redirected away from. */
 const AUTH_ROUTES = ['/login', '/register']
