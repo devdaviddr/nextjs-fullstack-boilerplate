@@ -8,6 +8,13 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Cloudflare Tunnel deployment ([spec 0005](specs/0005-cloudflare-tunnel-deployment.md)):
+  quick-tunnel and named-tunnel Compose overlays, a Terraform module
+  (`infra/cloudflare/`), a `Makefile`, `docs/deployment.md`, and a
+  `tunnel-verify` doctor. Rate limiting now trusts `CF-Connecting-IP`.
+
 ## [0.3.1] - 2026-07-12
 
 ### Added

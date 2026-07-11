@@ -49,7 +49,7 @@ other — one isn't a substitute for the other.
 | [0002](0002-pwa-and-app-shell.md)            | PWA & responsive app shell       | Shipped  | v0.2.0  |
 | [0003](0003-security-hardening.md)           | Production security hardening    | Shipped  | v0.3.0  |
 | [0004](0004-graphify-claude-integration.md)  | graphify & CLAUDE.md integration | Shipped  | v0.3.1  |
-| [0005](0005-cloudflare-tunnel-deployment.md) | Cloudflare Tunnel deployment     | Proposed | —       |
+| [0005](0005-cloudflare-tunnel-deployment.md) | Cloudflare Tunnel deployment     | Accepted | —       |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).
