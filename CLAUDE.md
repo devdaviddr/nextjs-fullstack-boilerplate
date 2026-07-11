@@ -57,6 +57,9 @@ Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
 ## Git & workflow
 
+- **Spec-driven.** Non-trivial features start with a spec in [`specs/`](specs/)
+  (copy `specs/TEMPLATE.md`, status `Proposed` → `Accepted` → `Shipped`). See
+  [`specs/README.md`](specs/README.md).
 - **Gitflow.** `develop` is the default/integration branch; feature work branches
   off it; releases merge to `main` and are tagged (`vX.Y.Z`). Pre-1.0.
 - **Conventional Commits**, enforced by a commitlint `commit-msg` hook. Keep

@@ -15,15 +15,20 @@ pnpm dev
 
 ## Workflow
 
-1. Create a branch off `main`.
-2. Make your change with tests where it makes sense.
-3. Run the full gate locally before pushing:
+1. For a non-trivial feature, write a spec first — copy
+   [`specs/TEMPLATE.md`](specs/TEMPLATE.md) and open it as `Proposed`
+   (see [`specs/README.md`](specs/README.md)).
+2. Branch off `develop` (gitflow): `feature/<slug>`.
+3. Make your change with tests where it makes sense.
+4. Run the full gate locally before pushing:
 
    ```bash
    pnpm lint && pnpm typecheck && pnpm test && pnpm build
    ```
 
-4. Open a pull request. CI (lint · typecheck · unit · E2E · Docker) must pass.
+5. Open a pull request into `develop`. CI (lint · typecheck · unit · E2E ·
+   Docker) must pass. On release, set the spec to `Shipped` and update
+   `CHANGELOG.md`.
 
 ## Commit messages
 
