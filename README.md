@@ -63,6 +63,7 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 🗄️ **[Database](docs/database.md)**         | Schema, migrations, Drizzle workflow, seeding                |
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
+| 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release       |
 
 ## Tech stack
 
