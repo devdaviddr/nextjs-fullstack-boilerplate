@@ -11,6 +11,7 @@ A production-grade starting point for full-stack web apps — authentication, da
 ![Auth.js](https://img.shields.io/badge/Auth.js-v5-000000?logo=auth0&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-ready-5a0fc8?logo=pwa&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 </div>
 
@@ -113,4 +114,4 @@ See **[Usage & Development](docs/usage.md)** for the full workflow.
 
 ## License
 
-Currently unlicensed / private. Add a `LICENSE` file before distributing.
+Released under the [MIT License](LICENSE).
