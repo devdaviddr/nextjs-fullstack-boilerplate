@@ -1,8 +1,8 @@
 ---
 id: 0005
 title: Cloudflare Tunnel deployment
-status: Accepted
-release: '—'
+status: Shipped
+release: v0.4.0
 created: 2026-07-12
 updated: 2026-07-12
 ---
