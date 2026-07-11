@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+cloudflare_api_token  = "cf_xxxxxxxx" # scoped: Account>Tunnel:Edit, Zone>DNS:Edit
+cloudflare_account_id = "your-account-id"
+cloudflare_zone_id    = "your-zone-id"
+hostname              = "app.example.com"
+
+# tunnel_name = "nextjs-boilerplate"
+# service     = "http://app:3000"

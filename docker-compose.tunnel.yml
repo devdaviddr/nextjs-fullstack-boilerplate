@@ -1,0 +1,23 @@
+# Overlay for docker-compose.prod.yml — expose the app via a NAMED Cloudflare Tunnel.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.tunnel.yml up -d --build
+#   (or: make tunnel-up)
+#
+# Requires CLOUDFLARE_TUNNEL_TOKEN and AUTH_URL in the environment (see .env and
+# `make tunnel-provision`). `!reset []` clears the base app's published port so
+# the container is reachable ONLY through the tunnel.
+services:
+  app:
+    ports: !reset []
+    environment:
+      AUTH_URL: ${AUTH_URL:?set AUTH_URL to your public https URL, e.g. https://app.example.com}
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN (see make tunnel-provision)}
+    depends_on:
+      app:
+        condition: service_started

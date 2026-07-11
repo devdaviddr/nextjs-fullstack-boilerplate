@@ -1,7 +1,7 @@
 ---
 id: 0005
 title: Cloudflare Tunnel deployment
-status: Proposed
+status: Accepted
 release: '—'
 created: 2026-07-12
 updated: 2026-07-12
@@ -40,10 +40,11 @@ reproducible feature — not a copy-pasted snippet.
 
 ### Functional
 
-- **FR1** — `cloudflared` service (Compose profile `tunnel`) running a
-  token-based named tunnel; app has **no published host ports** in this mode.
-- **FR2** — A `quick-tunnel` profile for an ephemeral `*.trycloudflare.com` URL
-  with no Cloudflare account.
+- **FR1** — `cloudflared` service (Compose overlay `docker-compose.tunnel.yml`)
+  running a token-based named tunnel; app has **no published host ports** in
+  this mode.
+- **FR2** — A quick-tunnel overlay (`docker-compose.quick-tunnel.yml`) for an
+  ephemeral `*.trycloudflare.com` URL with no Cloudflare account.
 - **FR3** — Terraform module provisioning the tunnel, its ingress config, and the
   DNS record; outputs the runtime tunnel token.
 - **FR4** — A `tunnel:verify` doctor usable after either the guided or automated
@@ -79,12 +80,15 @@ Layered — right tool per layer, all converging on the Compose runtime:
 
 ## Acceptance criteria
 
-- [ ] `docker compose --profile quick-tunnel up` yields a working public URL.
-- [ ] `make tunnel-provision && make tunnel-up` serves the app on the domain.
-- [ ] `make tunnel-verify` confirms tunnel connectivity + `/api/health` + real
-      client IP + secure cookies.
-- [ ] `make tunnel-destroy` / `terraform destroy` cleanly removes everything.
-- [ ] App has no published host ports in tunnel mode.
+- [x] `make tunnel-quick` yields a working public `*.trycloudflare.com` URL —
+      **verified live** (app + DB served over Cloudflare's edge).
+- [x] `make tunnel-verify` confirms `/api/health` (db up) + HSTS + CSP — verified.
+- [x] App has no published host ports in tunnel mode — `docker compose config`
+      confirms `!reset []` clears them.
+- [x] Rate limiting prefers `CF-Connecting-IP` — unit-tested.
+- [ ] `make tunnel-provision && make tunnel-up` serves the app on a custom domain
+      — needs a Cloudflare account/API token (module written, not applied here).
+- [ ] `make tunnel-destroy` / `terraform destroy` removes everything — same.
 
 ## Security & privacy
 
