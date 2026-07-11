@@ -8,6 +8,17 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-12
+
+### Added
+
+- Cloudflare Tunnel deployment ([spec 0005](specs/0005-cloudflare-tunnel-deployment.md)):
+  quick-tunnel and named-tunnel Compose overlays, a Terraform module
+  (`infra/cloudflare/`), a `Makefile`, `docs/deployment.md`, and a
+  `tunnel-verify` doctor. Rate limiting now trusts `CF-Connecting-IP`.
+- Spec-driven development: a `specs/` directory with a template, workflow guide,
+  and one spec per release.
+
 ## [0.3.1] - 2026-07-12
 
 ### Added
@@ -74,7 +85,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.1.0...v0.2.0

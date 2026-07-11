@@ -11,6 +11,7 @@ import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
 import { logger } from '@/lib/logger'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
+import { clientIpFromHeaders } from '@/lib/request-ip'
 import { loginSchema, registerSchema } from '@/lib/validations/auth'
 
 /**
@@ -51,10 +52,7 @@ function collectFieldErrors(
 
 /** Best-effort client IP from proxy headers (falls back to a shared bucket). */
 async function clientIp(): Promise<string> {
-  const h = await headers()
-  const forwarded = h.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0]!.trim()
-  return h.get('x-real-ip') ?? 'unknown'
+  return clientIpFromHeaders(await headers())
 }
 
 const TOO_MANY = 'Too many attempts. Please wait a few minutes and try again.'

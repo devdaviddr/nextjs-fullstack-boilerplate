@@ -1,0 +1,38 @@
+# Cloudflare Tunnel deployment helpers. See docs/deployment.md.
+COMPOSE := docker compose -f docker-compose.prod.yml
+TF      := terraform -chdir=infra/cloudflare
+
+.DEFAULT_GOAL := help
+
+.PHONY: help tunnel-quick tunnel-provision tunnel-token tunnel-up tunnel-down tunnel-verify tunnel-destroy
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+tunnel-quick: ## Ephemeral public URL, no account (prints the trycloudflare.com URL)
+	$(COMPOSE) -f docker-compose.quick-tunnel.yml up --build
+
+tunnel-provision: ## Provision tunnel + DNS via Terraform, write token to .env
+	$(TF) init -input=false
+	$(TF) apply -auto-approve
+	@token="$$($(TF) output -raw tunnel_token)"; \
+	  if grep -q '^CLOUDFLARE_TUNNEL_TOKEN=' .env 2>/dev/null; then \
+	    sed -i.bak "s|^CLOUDFLARE_TUNNEL_TOKEN=.*|CLOUDFLARE_TUNNEL_TOKEN=$$token|" .env && rm -f .env.bak; \
+	  else echo "CLOUDFLARE_TUNNEL_TOKEN=$$token" >> .env; fi; \
+	  echo "✓ Wrote CLOUDFLARE_TUNNEL_TOKEN to .env — set AUTH_URL, then: make tunnel-up"
+
+tunnel-token: ## Print the tunnel token from Terraform state
+	@$(TF) output -raw tunnel_token
+
+tunnel-up: ## Start the full stack behind the named tunnel
+	$(COMPOSE) -f docker-compose.tunnel.yml up -d --build
+
+tunnel-down: ## Stop the tunnel stack (keeps data)
+	$(COMPOSE) -f docker-compose.tunnel.yml down
+
+tunnel-verify: ## Health-check a deployment: URL=https://app.example.com make tunnel-verify
+	./scripts/tunnel-verify.sh "$(URL)"
+
+tunnel-destroy: ## Tear down the Cloudflare tunnel + DNS (Terraform)
+	$(TF) destroy -auto-approve

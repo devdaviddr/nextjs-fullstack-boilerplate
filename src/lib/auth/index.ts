@@ -8,13 +8,12 @@ import { authConfig } from './config'
 import { fakeVerifyPassword, verifyPassword } from './password'
 import { logger } from '@/lib/logger'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
+import { clientIpFromHeaders } from '@/lib/request-ip'
 import { loginSchema } from '@/lib/validations/auth'
 
 /** Best-effort client IP from a Request's proxy headers. */
 function ipFromRequest(request: Request | undefined): string {
-  const forwarded = request?.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0]!.trim()
-  return request?.headers.get('x-real-ip') ?? 'unknown'
+  return request ? clientIpFromHeaders(request.headers) : 'unknown'
 }
 
 /**

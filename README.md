@@ -63,6 +63,8 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 🗄️ **[Database](docs/database.md)**         | Schema, migrations, Drizzle workflow, seeding                |
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
+| 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |
+| 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release       |
 
 ## Tech stack
 

@@ -1,0 +1,19 @@
+# Overlay for docker-compose.prod.yml — ephemeral public URL via Cloudflare
+# QUICK TUNNEL. No Cloudflare account or domain needed; the random
+# https://<...>.trycloudflare.com URL is printed in the cloudflared logs.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.quick-tunnel.yml up --build
+#   (or: make tunnel-quick)
+#
+# AUTH_TRUST_HOST=true (set in the base app) lets auth work on the random host.
+# AUTH_SECRET is still required.
+services:
+  app:
+    ports: !reset []
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://app:3000
+    depends_on:
+      app:
+        condition: service_started
