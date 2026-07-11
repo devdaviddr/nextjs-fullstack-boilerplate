@@ -1,17 +1,82 @@
 import NextAuth from 'next-auth'
+import { NextResponse } from 'next/server'
 
 import { authConfig } from '@/lib/auth/config'
 
 // Next.js 16 renamed the edge "middleware" convention to "proxy". This runs on
-// the edge runtime using only the edge-safe config (no DB, no argon2); route
-// protection logic lives in `authConfig.callbacks.authorized`.
-export default NextAuth(authConfig).auth
+// the edge runtime using only the edge-safe config (no DB, no argon2). It does
+// two jobs: route protection and per-request Content-Security-Policy.
+
+const { auth } = NextAuth(authConfig)
+
+/** Routes that require an authenticated session. */
+const PROTECTED_PREFIXES = ['/dashboard', '/settings']
+/** Auth pages an already-signed-in user should be bounced away from. */
+const AUTH_ROUTES = ['/login', '/register']
+
+function buildCsp(nonce: string, isDev: boolean): string {
+  // Dev needs 'unsafe-eval'/'unsafe-inline' for React Refresh + Turbopack HMR;
+  // production locks scripts to a per-request nonce with strict-dynamic.
+  const scriptSrc = isDev
+    ? `'self' 'unsafe-inline' 'unsafe-eval'`
+    : `'self' 'nonce-${nonce}' 'strict-dynamic'`
+
+  return [
+    `default-src 'self'`,
+    `script-src ${scriptSrc}`,
+    `style-src 'self' 'unsafe-inline'`, // Next/Tailwind inject inline styles
+    `img-src 'self' blob: data:`,
+    `font-src 'self'`,
+    `connect-src 'self'`,
+    `manifest-src 'self'`,
+    `worker-src 'self'`,
+    `object-src 'none'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+    `frame-ancestors 'none'`,
+    isDev ? '' : `upgrade-insecure-requests`,
+  ]
+    .filter(Boolean)
+    .join('; ')
+}
+
+export default auth((req) => {
+  const { nextUrl } = req
+  const { pathname } = nextUrl
+  const isLoggedIn = !!req.auth?.user
+
+  // --- Route protection ---
+  const isProtected = PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  if (isProtected && !isLoggedIn) {
+    const url = new URL('/login', nextUrl)
+    url.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(url)
+  }
+  if (isLoggedIn && AUTH_ROUTES.includes(pathname)) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl))
+  }
+
+  // --- Content-Security-Policy (per-request nonce) ---
+  const isDev = process.env.NODE_ENV !== 'production'
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  const nonce = btoa(String.fromCharCode(...bytes))
+  const csp = buildCsp(nonce, isDev)
+
+  // Setting the CSP on the request headers lets Next.js read the nonce and
+  // apply it to its own scripts; we also set it on the response.
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('x-nonce', nonce)
+  requestHeaders.set('content-security-policy', csp)
+
+  const res = NextResponse.next({ request: { headers: requestHeaders } })
+  res.headers.set('content-security-policy', csp)
+  return res
+})
 
 export const config = {
-  /**
-   * Run on every path except Next.js internals, static assets, and common
-   * public files. The auth API route is excluded so Auth.js can handle it.
-   */
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)',
   ],

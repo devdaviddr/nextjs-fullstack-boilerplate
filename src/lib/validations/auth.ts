@@ -15,7 +15,9 @@ const email = z
 const password = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(72, 'Password must be at most 72 characters')
+  // Argon2 has no bcrypt-style 72-byte limit; this cap only bounds hashing cost
+  // (a DoS guard against absurdly long inputs).
+  .max(128, 'Password must be at most 128 characters')
 
 export const loginSchema = z.object({
   email,
