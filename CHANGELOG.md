@@ -8,6 +8,12 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded the deployment guide ([docs/deployment.md](docs/deployment.md)) with a
+  how-it-works overview, an environment-variables table, and operating /
+  troubleshooting sections; added a prominent Deployment section to the README.
+
 ## [0.4.0] - 2026-07-12
 
 ### Added

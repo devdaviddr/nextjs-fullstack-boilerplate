@@ -21,12 +21,39 @@ Three on-ramps, all converging on the same runtime:
 > In tunnel modes the app has **no published host ports** — it's reachable only
 > through the tunnel.
 
+## How it works
+
+```
+User ──HTTPS──▶  Cloudflare edge  ◀══ outbound tunnel ══  cloudflared ──▶ app:3000
+                 (terminates TLS)                          (in Docker)
+```
+
+`cloudflared` dials **out** to Cloudflare and holds the connection open;
+Cloudflare terminates TLS for your domain and pushes matching requests down that
+connection to the app container over the internal Docker network. No inbound
+ports are opened on your host. (Deeper walkthrough:
+[architecture](architecture.md).)
+
 ## Prerequisites
 
 - Docker + Docker Compose (v2.24+ for the `!reset` override).
 - A `.env` with at least `AUTH_SECRET` and `DATABASE_URL` (see [`.env.example`](../.env.example)).
 - For named tunnels: a domain on Cloudflare and (for the automated path) a
   scoped API token — **Account → Cloudflare Tunnel: Edit**, **Zone → DNS: Edit**.
+
+## Environment variables
+
+| Variable                                       | Used by                | Notes                                         |
+| ---------------------------------------------- | ---------------------- | --------------------------------------------- |
+| `AUTH_SECRET`                                  | runtime (all modes)    | required                                      |
+| `CLOUDFLARE_TUNNEL_TOKEN`                      | runtime (named tunnel) | from `make tunnel-provision` or the dashboard |
+| `AUTH_URL`                                     | runtime (named tunnel) | your public `https://…` URL                   |
+| `CLOUDFLARE_API_TOKEN`                         | provisioning           | scoped: Tunnel:Edit + DNS:Edit                |
+| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_ZONE_ID` | provisioning           | from the Cloudflare dashboard                 |
+| `TUNNEL_HOSTNAME`                              | provisioning           | e.g. `app.example.com`                        |
+
+Runtime vars go in `.env`; provisioning vars are best kept in
+`infra/cloudflare/terraform.tfvars` (gitignored). See [`.env.example`](../.env.example).
 
 ## Quick tunnel (no account)
 
@@ -80,6 +107,31 @@ Produces the same `CLOUDFLARE_TUNNEL_TOKEN` + DNS record by hand:
 - **Client IP** is read from `CF-Connecting-IP` (set by Cloudflare, unspoofable)
   for rate limiting — see `src/lib/request-ip.ts`.
 - HSTS / CSP / hardening headers are served from the origin as usual.
+
+## Operating
+
+```bash
+make tunnel-up       # start (detached)
+make tunnel-down     # stop (keeps data)
+# follow the daemon's logs:
+docker compose -f docker-compose.prod.yml -f docker-compose.tunnel.yml logs -f cloudflared
+```
+
+Update `cloudflared` by re-pulling the image:
+`docker compose -f docker-compose.prod.yml -f docker-compose.tunnel.yml pull cloudflared && make tunnel-up`.
+
+## Troubleshooting
+
+- **502 / Bad gateway** — the app isn't ready yet, or the ingress service is
+  wrong; it must be `http://app:3000` (the Compose service name, not `localhost`).
+- **Login loop / cookies not sticking** — set `AUTH_URL` to the exact public URL
+  and keep `AUTH_TRUST_HOST=true`.
+- **Tunnel won't connect** — check the token (`make tunnel-token`) and the
+  `cloudflared` logs; a token is bound to one tunnel.
+- **Quick-tunnel URL changed** — it's ephemeral; every `make tunnel-quick` gets a
+  new hostname. Use a named tunnel for a stable URL.
+- **Rate limiting sees the wrong IP** — traffic must arrive via Cloudflare so
+  `CF-Connecting-IP` is present; direct hits to the origin won't have it.
 
 ## Notes
 
