@@ -8,13 +8,21 @@ PostgreSQL 17 accessed through [Drizzle ORM](https://orm.drizzle.team) with a `p
 
 Defined in `src/db/schema.ts`. Tables follow the Auth.js Drizzle-adapter conventions so OAuth can be added later without a rewrite.
 
-| Table                 | Purpose                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| `users`               | Accounts. Includes `hashed_password` (null for OAuth-only users), timestamps, unique email index. |
-| `accounts`            | OAuth provider links (unused by credentials flow, ready for OAuth).                               |
-| `sessions`            | Database sessions (unused under JWT strategy, ready for adapter use).                             |
-| `verification_tokens` | Email verification / magic-link tokens.                                                           |
-| `authenticators`      | WebAuthn/passkey credentials (ready for future use).                                              |
+| Table                 | Purpose                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users`               | Accounts. `hashed_password` (null for OAuth-only or unclaimed invited users), `invite_token_hash` + `invite_expires` (single-use invite claim), timestamps, unique email index. |
+| `roles`               | Named roles (`admin`, `member`, …) — unique name + optional description.                                                                                                        |
+| `user_roles`          | Many-to-many join of users ↔ roles (composite PK; cascades on user/role delete).                                                                                                |
+| `accounts`            | OAuth provider links (unused by credentials flow, ready for OAuth).                                                                                                             |
+| `sessions`            | Database sessions (unused under JWT strategy, ready for adapter use).                                                                                                           |
+| `verification_tokens` | Email verification / magic-link tokens (schema present; not yet wired).                                                                                                         |
+| `authenticators`      | WebAuthn/passkey credentials (ready for future use).                                                                                                                            |
+
+Roles are read from a `roles: string[]` claim on the JWT — see
+[Features → Access control](features.md#access-control-rbac). The two invite
+columns on `users` back the passwordless
+[invite claim flow](features.md#invite-based-account-claim); the raw token is
+never stored, only its SHA-256 hash.
 
 Inferred types are exported for app code:
 
@@ -53,13 +61,14 @@ In production, run `pnpm db:migrate` as a deploy step. The `migrate` service in 
 
 ## Seeding
 
-`pnpm db:seed` inserts an idempotent demo user:
+`pnpm db:seed` inserts an idempotent demo user, creates the `admin` / `member` /
+`viewer` roles, and grants `admin` to that user:
 
 ```
-demo@example.com / Password123
+demo@example.com / Password123   (admin)
 ```
 
-Safe to run repeatedly — it no-ops if the user already exists. Never run the seed against production.
+Safe to run repeatedly — it no-ops if the user/role already exist. Never run the seed against production.
 
 ## Connection string
 

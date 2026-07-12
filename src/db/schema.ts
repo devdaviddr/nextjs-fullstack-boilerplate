@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
   index,
@@ -32,6 +32,10 @@ export const users = pgTable(
     image: text('image'),
     // Null for accounts created purely via OAuth; set for credentials users.
     hashedPassword: text('hashed_password'),
+    // Invite flow: an admin-created (passwordless) user can only claim their
+    // account with this token. Stored hashed; cleared once the account is claimed.
+    inviteTokenHash: text('invite_token_hash'),
+    inviteExpires: timestamp('invite_expires', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' })
       .notNull()
@@ -108,5 +112,56 @@ export const authenticators = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.credentialID] })],
 )
 
+export const roles = pgTable(
+  'roles',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('roles_name_unique_idx').on(table.name)],
+)
+
+export const userRoles = pgTable(
+  'user_roles',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    roleId: text('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.roleId] })],
+)
+
+// Drizzle relations — required for `db.query.*` relational queries with `with`.
+// These are ORM-only (no database migration).
+export const usersRelations = relations(users, ({ many }) => ({
+  userRoles: many(userRoles),
+}))
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  userRoles: many(userRoles),
+}))
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}))
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
+export type Role = typeof roles.$inferSelect
+export type NewRole = typeof roles.$inferInsert
+export type UserRole = typeof userRoles.$inferSelect
+export type NewUserRole = typeof userRoles.$inferInsert

@@ -8,6 +8,20 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Role-based access control ([spec 0006](specs/0006-rbac.md)): `roles` / `user_roles`
+  tables, roles in the JWT session, `requireRole` / `hasRole` server guards and
+  `useRole` / `<RequireRole>` client helpers, edge role-gating in `proxy.ts`, a `/403`
+  page, and an admin user-management panel in Settings.
+- Invite-only account claim: admin-created users are passwordless and can only be
+  claimed with a single-use, hashed, 7-day invite token via `/register?invite=…`.
+- Optional email delivery (`src/lib/email/`): SMTP-based, provider-agnostic, and
+  **off by default**. It activates only when `EMAIL_ENABLED=true` **and** an SMTP
+  provider is configured — enabling it without a provider fails fast at boot, and
+  when disabled every send is a safe no-op. Invite links are emailed when enabled and
+  always shown in the admin UI as a fallback.
+
 ## [0.4.1] - 2026-07-12
 
 ### Changed

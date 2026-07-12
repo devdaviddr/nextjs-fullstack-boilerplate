@@ -29,7 +29,7 @@ flowchart TD
 
 ## Request flow
 
-1. **Edge proxy** (`src/proxy.ts`) runs first on protected paths. It uses only the edge-safe auth config (no DB, no native crypto) to check the session and redirect unauthenticated users to `/login`.
+1. **Edge proxy** (`src/proxy.ts`) runs first on protected paths. It uses only the edge-safe auth config (no DB, no native crypto) to check the session, redirect unauthenticated users to `/login`, and redirect users lacking a required role (`ROLE_REQUIRED`) to `/403`.
 2. **App Router** renders the page as a Server Component. Protected layouts/pages re-read the session server-side (`getCurrentSession`) as defense in depth.
 3. **Server Actions** handle mutations (register, login, sign-out) — no separate API layer for forms.
 4. **Drizzle ORM** executes type-safe queries against Postgres via a pooled `postgres-js` client.
@@ -38,15 +38,19 @@ flowchart TD
 
 Auth.js v5 is split across two runtimes so the edge middleware stays lightweight:
 
-| File                     | Runtime   | Responsibility                                                                                                        |
-| ------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/auth/config.ts` | edge-safe | `pages`, session strategy, `authorized`/`jwt`/`session` callbacks. **No DB, no argon2.**                              |
-| `src/lib/auth/index.ts`  | Node      | Full `NextAuth()` with the Credentials provider (needs DB + argon2). Exports `handlers`, `auth`, `signIn`, `signOut`. |
-| `src/proxy.ts`           | edge      | Imports only `config.ts`; enforces route protection.                                                                  |
+| File                           | Runtime   | Responsibility                                                                                                        |
+| ------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/auth/config.ts`       | edge-safe | `pages`, session strategy, `authorized`/`jwt`/`session` callbacks. **No DB, no argon2.**                              |
+| `src/lib/auth/index.ts`        | Node      | Full `NextAuth()` with the Credentials provider (needs DB + argon2). Exports `handlers`, `auth`, `signIn`, `signOut`. |
+| `src/proxy.ts`                 | edge      | Imports only `config.ts`; enforces route protection + role gating.                                                    |
+| `src/lib/auth/rbac.ts`         | Node      | Server-side role guards: `requireRole` / `requireAnyRole` / `hasRole` (throw `ForbiddenError`).                       |
+| `src/lib/auth/client-rbac.tsx` | client    | `useRole()` hook + `<RequireRole>` for cosmetic gating (server checks stay authoritative).                            |
+| `src/lib/auth/invite.ts`       | Node      | Single-use invite tokens: mint / SHA-256 hash / time-safe verify (`node:crypto`).                                     |
 
 Key properties:
 
 - **JWT sessions** — required for the Credentials provider; the user id is attached in the `jwt` callback and surfaced in `session`.
+- **Roles on the token** — the `jwt` callback attaches a `roles: string[]` claim (self-healing: a stale token missing it re-fetches once and back-fills). `proxy.ts` gates route prefixes on it via `ROLE_REQUIRED`; server actions assert with `requireRole`. See [Features → Access control](features.md#access-control-rbac).
 - **Argon2id hashing** (`src/lib/auth/password.ts`) with OWASP parameters.
 - **User-enumeration resistance** — `fakeVerifyPassword` runs a dummy verify when no user matches, equalizing response timing.
 - **Resilient reads** — `getCurrentSession` (`src/lib/auth/session.ts`) catches an undecryptable-cookie error (e.g. after `AUTH_SECRET` rotation) and returns `null` instead of throwing, while re-throwing Next.js control-flow signals via `unstable_rethrow`.
@@ -76,7 +80,20 @@ Key properties:
   a 500. Emails are stored lower-cased with a functional `lower(email)` unique
   index for case-insensitive uniqueness.
 - Environment validated at boot (`src/lib/env.ts`) — the app refuses to start
-  with a missing/invalid secret or DB URL.
+  with a missing/invalid secret or DB URL, or with `EMAIL_ENABLED=true` but no
+  SMTP provider configured.
+- **RBAC** — roles live only in the DB + JWT claim. Edge gating (`proxy.ts`) is
+  a fast JWT check; server actions and the admin panel re-assert with
+  `requireRole` against `getCurrentSession()` (DB-backed if the token is stale),
+  so the client helpers are cosmetic and can't grant access.
+- **Invite claim** — admin-created accounts are passwordless and claimable only
+  with a single-use token whose SHA-256 hash (not the token) is stored, is
+  time-safe compared, expires in 7 days, and is cleared on use. A wrong/expired
+  invite returns the same generic message as an existing account (no enumeration).
+- **Email is opt-in** — off unless `EMAIL_ENABLED=true` **and** a provider is set;
+  `sendEmail` is a no-op otherwise and never throws on send failure, so mail can't
+  block a mutation. `nodemailer` is loaded lazily — never bundled when off, never
+  at the edge.
 - Service worker **never caches** authenticated HTML or API responses (see
   [PWA](pwa.md#caching-strategy)).
 - Sensitive files are git- and docker-ignored; the Docker image runs as a
@@ -97,9 +114,10 @@ src/
 ├── app/
 │   ├── (auth)/                  # login + register (shared centered layout)
 │   ├── (dashboard)/             # protected area, wrapped in the app shell
-│   │   ├── layout.tsx           #   auth guard + <AppShell>
+│   │   ├── layout.tsx           #   auth guard + <SessionProvider> + <AppShell>
 │   │   ├── dashboard/           #   /dashboard
-│   │   └── settings/            #   /settings
+│   │   └── settings/            #   /settings + admin user-management panel
+│   ├── 403/                     # forbidden page (role-gated redirects land here)
 │   ├── api/
 │   │   ├── auth/[...nextauth]/  # Auth.js endpoints
 │   │   └── health/             # DB-backed liveness probe
@@ -116,12 +134,14 @@ src/
 ├── db/
 │   ├── schema.ts · index.ts · migrate.ts · seed.ts
 ├── lib/
-│   ├── auth/                    # config · index · password · actions · session · form-state
+│   ├── auth/                    # config · index · password · actions · admin-actions
+│   │                           #   · session · form-state · rbac · client-rbac · invite
+│   ├── email/                   # index (gate + sendEmail) · transport (SMTP) · templates
 │   ├── shell/nav.ts            # sidebar navigation config
 │   ├── validations/            # Zod schemas
 │   ├── env.ts · utils.ts
-├── proxy.ts                     # edge route protection
-└── types/next-auth.d.ts         # session typing
+├── proxy.ts                     # edge route protection + role gating
+└── types/next-auth.d.ts         # session + roles typing
 ```
 
 ## Key decisions

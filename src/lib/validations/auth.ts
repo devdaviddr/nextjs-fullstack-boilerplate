@@ -39,5 +39,28 @@ export const registerSchema = z
     path: ['confirmPassword'],
   })
 
+/** Admin: create a new user (no password — user sets it on first login) */
+export const createUserSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(255),
+  email,
+  roleIds: z.array(z.string().uuid()).min(1, 'At least one role required'),
+})
+
+/** Admin: update user name/email/roles */
+export const updateUserSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(255).optional(),
+  email: email.optional(),
+  roleIds: z.array(z.string().uuid()).optional(),
+})
+
+/** Admin: assign/replace roles for a user */
+export const assignRolesSchema = z.object({
+  userId: z.string().uuid(),
+  roleIds: z.array(z.string().uuid()).min(1, 'At least one role required'),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
+export type CreateUserInput = z.infer<typeof createUserSchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
+export type AssignRolesInput = z.infer<typeof assignRolesSchema>
