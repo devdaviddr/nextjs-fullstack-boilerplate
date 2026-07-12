@@ -8,6 +8,18 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Automated accessibility regression checks (`tests/e2e/a11y.spec.ts`) — axe
+  (`@axe-core/playwright`) scans of login, register, dashboard, the settings
+  admin panel (incl. the "Add User" dialog), and `/403` against WCAG 2.0/2.1
+  A + AA, so an a11y regression fails CI instead of relying on a one-time
+  manual pass.
+- Unit test coverage for `src/lib/auth/admin-actions.ts` (previously 0%,
+  the largest untested surface in the app) — create/update/delete user,
+  role assignment, and invite completion, including the self-role-removal,
+  self-delete, duplicate-email, and unknown-role guard paths.
+
 ## [0.5.0] - 2026-07-13
 
 ### Added
