@@ -52,21 +52,19 @@ other — one isn't a substitute for the other.
 | [0005](0005-cloudflare-tunnel-deployment.md)      | Cloudflare Tunnel deployment          | Shipped  | v0.4.0          |
 | [0006](0006-rbac.md)                              | Role-based access control (RBAC)      | Shipped  | v0.5.0          |
 | [0007](0007-file-uploads.md)                      | File uploads & object storage (MinIO) | Proposed | —               |
-| [0008](0008-seo-metadata.md)                      | SEO & public-facing metadata          | Proposed | —               |
 | [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Proposed | —               |
 | [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Proposed | —               |
 | [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Proposed | —               |
-| [0012](0012-error-tracking.md)                    | Error tracking (Sentry, opt-in)       | Proposed | —               |
 | [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Proposed | —               |
-| [0014](0014-cloudflare-web-analytics.md)          | Cloudflare Web Analytics              | Proposed | —               |
 | [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
-| [0016](0016-i18n.md)                              | Internationalization (i18n)           | Proposed | —               |
 | [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).
 >
-> Specs 0007–0017 map 1:1 to the remaining [roadmap](../README.md#roadmap)
-> items, in priority order. Each is scoped to ship as its own release — small,
-> independently reviewable increments rather than one large batch. 0017 is
-> written but intentionally not scheduled — see its "Non-goals".
+> Remaining specs map to the [roadmap](../README.md#roadmap), in priority
+> order, each scoped to ship as its own release. Numbering has gaps (0008,
+> 0012, 0014, 0016) from descoped drafts — SEO metadata, error tracking,
+> Cloudflare Analytics, and i18n aren't planned right now; the numbers aren't
+> reused. 0017 is written but intentionally not scheduled — see its
+> "Non-goals".
