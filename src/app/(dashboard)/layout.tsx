@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation'
+import { SessionProvider } from 'next-auth/react'
 
 import { AppShell } from '@/components/shell/app-shell'
 import { getCurrentSession } from '@/lib/auth/session'
 
 // Wraps all protected pages in the app shell. Also enforces auth at the layout
-// level (defense in depth on top of the edge proxy).
+// level (defense in depth on top of the edge proxy). The SessionProvider is
+// hydrated with the server session so client role hooks (useRole/RequireRole)
+// work reliably here without a client-side fetch.
 export default async function DashboardLayout({
   children,
 }: {
@@ -16,8 +19,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <AppShell user={{ name: session.user.name, email: session.user.email }}>
-      {children}
-    </AppShell>
+    <SessionProvider session={session}>
+      <AppShell user={{ name: session.user.name, email: session.user.email }}>
+        {children}
+      </AppShell>
+    </SessionProvider>
   )
 }

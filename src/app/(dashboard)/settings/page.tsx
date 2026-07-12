@@ -1,31 +1,51 @@
-import type { Metadata } from 'next'
-
+import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { getCurrentSession } from '@/lib/auth/session'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  getAllUsersWithRoles,
+  getAllRoles,
+  type UserWithRoles,
+} from '@/lib/auth/admin-actions'
+import { SettingsClient } from './settings-client'
 
 export const metadata: Metadata = { title: 'Settings' }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await getCurrentSession()
+  if (!session?.user) {
+    redirect('/login')
+  }
+
+  const isAdmin = (session.user.roles ?? []).includes('admin')
+
+  // Fetch data in parallel
+  const [users, roles] = await Promise.all([
+    isAdmin ? getAllUsersWithRoles() : Promise.resolve([] as UserWithRoles[]),
+    isAdmin
+      ? getAllRoles()
+      : Promise.resolve(
+          [] as Array<{ id: string; name: string; description: string | null }>,
+        ),
+  ])
+
+  // Ensure user properties are never undefined (they're required by auth)
+  const sessionWithId = {
+    ...session,
+    user: {
+      ...session.user,
+      id: session.user.id ?? '',
+      name: session.user.name ?? null,
+      email: session.user.email ?? '',
+      roles: session.user.roles ?? [],
+    },
+  }
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Example settings</CardTitle>
-          <CardDescription>
-            A placeholder page to demonstrate multi-route navigation inside the
-            app shell.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          Wire up account and application settings here.
-        </CardContent>
-      </Card>
-    </div>
+    <SettingsClient
+      session={sessionWithId}
+      users={users ?? []}
+      roles={roles ?? []}
+      isAdmin={isAdmin}
+    />
   )
 }

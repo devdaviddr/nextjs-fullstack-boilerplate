@@ -162,7 +162,8 @@ export function AppShell({
           tabIndex={-1}
           className="flex-1 px-4 py-6 pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)] outline-none sm:px-6"
         >
-          {children}
+          {/* Shared content container so every page aligns and sizes the same. */}
+          <div className="mx-auto w-full max-w-4xl">{children}</div>
         </main>
       </div>
     </div>

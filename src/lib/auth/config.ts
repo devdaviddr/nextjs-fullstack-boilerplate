@@ -1,5 +1,8 @@
 import type { NextAuthConfig } from 'next-auth'
 
+// Import types to trigger module augmentation
+import './types'
+
 /**
  * Edge-safe Auth.js configuration.
  *
@@ -19,17 +22,22 @@ export const authConfig = {
   // Providers are added in ./index.ts; keep this empty for the edge bundle.
   providers: [],
   callbacks: {
-    /** Persist the user id onto the JWT at sign-in. */
+    /** Persist the user id and roles onto the JWT at sign-in. */
     jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.roles = user.roles ?? []
       }
+      // Back-fill id from the standard `sub` claim so tokens issued before RBAC
+      // existed still resolve an id (the Node jwt in ./index.ts refreshes roles).
+      token.id ??= token.sub
       return token
     },
-    /** Expose the user id on the session object for the client/server. */
+    /** Expose the user id and roles on the session object for the client/server. */
     session({ session, token }) {
-      if (token.id && session.user) {
-        session.user.id = token.id as string
+      if (session.user) {
+        session.user.id = (token.id ?? token.sub) as string
+        session.user.roles = (token.roles as string[] | undefined) ?? []
       }
       return session
     },

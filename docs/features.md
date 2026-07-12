@@ -16,6 +16,30 @@ A complete inventory of what ships in this boilerplate.
 
 See [Architecture → Authentication](architecture.md#authentication-design) for the design.
 
+## Access control (RBAC)
+
+- **Roles model** — `roles` + `user_roles` (many-to-many); roles are carried as a `roles: string[]` claim on the JWT and session (no extra DB round-trip to read them).
+- **Server guards** — `requireRole()` / `requireAnyRole()` / `hasRole()` (`src/lib/auth/rbac.ts`) assert roles inside Server Actions and RSCs; failures throw `ForbiddenError`.
+- **Edge gating** — an optional `ROLE_REQUIRED` prefix map in `proxy.ts` redirects unauthorised users to **`/403`**, JWT-only (no Node deps at the edge).
+- **Client helpers** — `useRole()` and `<RequireRole>` (`src/lib/auth/client-rbac.tsx`) for conditional UI (cosmetic — server checks remain authoritative).
+- **Admin user management** — a Settings panel (admin-gated server-side) to list users and create / edit / delete them and assign roles.
+- **Self-healing sessions** — old JWTs missing the `roles` claim re-fetch roles once and back-fill the token.
+
+## Invite-based account claim
+
+- **Passwordless provisioning** — admins create users with no password; the account is claimed later via a one-time link.
+- **Single-use invite tokens** (`src/lib/auth/invite.ts`) — a 32-byte token is shown to the admin once; only its **SHA-256 hash** is stored (`users.invite_token_hash`), time-safe compared, and expires in 7 days.
+- **Claim flow** — `/register?invite=…&email=…` sets the password and consumes the invite; knowing the email alone is not enough (no account-enumeration signal).
+
+## Email (optional)
+
+- **Off by default** — everything email-related is inert unless `EMAIL_ENABLED=true` **and** an SMTP provider is configured; enabling it without a provider **fails fast at boot**.
+- **Provider-agnostic SMTP** (`src/lib/email/`) — works with Resend, SendGrid, Mailgun, SES, Postmark, or Gmail via their SMTP credentials; `nodemailer` is loaded lazily (never bundled when off, never at the edge).
+- **Safe no-op** — `sendEmail()` returns `{ skipped }` when disabled and never throws on send failure, so a flaky mail server can't break the surrounding action.
+- **Wired to invites** — invite links are emailed when enabled and always shown in the admin UI as a fallback.
+
+See [Usage → Environment variables](usage.md#environment-variables) to configure it.
+
 ## Database
 
 - **PostgreSQL 17** with **Drizzle ORM** (type-safe, SQL-first).

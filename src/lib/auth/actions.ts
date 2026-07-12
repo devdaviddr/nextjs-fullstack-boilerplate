@@ -9,6 +9,7 @@ import { users } from '@/db/schema'
 import { signIn, signOut } from '@/lib/auth'
 import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
+import { verifyInviteToken } from '@/lib/auth/invite'
 import { logger } from '@/lib/logger'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
@@ -61,6 +62,8 @@ const TOO_MANY = 'Too many attempts. Please wait a few minutes and try again.'
  * Register a new credentials user, then sign them in. On success this throws a
  * redirect (handled by Next.js) to the dashboard; on failure it returns a
  * form state describing what went wrong.
+ *
+ * Also handles "claiming" an admin-created account (user exists but has no password).
  */
 export async function registerAction(
   _prev: AuthFormState,
@@ -86,19 +89,67 @@ export async function registerAction(
   }
 
   const { name, email, password } = parsed.data
+  const invite = String(formData.get('invite') ?? '')
 
-  // Fast path — avoid an expensive hash on the common "already taken" case.
+  // Check if user exists
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
-    columns: { id: true },
+    columns: {
+      id: true,
+      hashedPassword: true,
+      inviteTokenHash: true,
+      inviteExpires: true,
+    },
   })
+
   if (existing) {
+    // An admin-created (passwordless) account can ONLY be claimed with the valid
+    // invite token issued to it — knowing the email alone is not enough.
+    const canClaim =
+      !existing.hashedPassword &&
+      verifyInviteToken(
+        invite,
+        existing.inviteTokenHash,
+        existing.inviteExpires,
+      )
+
+    if (canClaim) {
+      const hashedPassword = await hashPassword(password)
+      await db
+        .update(users)
+        .set({
+          hashedPassword,
+          name: name || null,
+          inviteTokenHash: null, // single-use — consume the invite
+          inviteExpires: null,
+        })
+        .where(eq(users.id, existing.id))
+
+      try {
+        await signIn('credentials', {
+          email,
+          password,
+          redirectTo: '/dashboard',
+        })
+      } catch (error) {
+        if (isNextRedirect(error)) throw error
+        return {
+          status: 'error',
+          message: 'Account claimed, but sign-in failed. Please log in.',
+        }
+      }
+      return { status: 'idle' }
+    }
+
+    // Existing account (or a claim without a valid invite): generic message so
+    // we don't reveal whether an account is claimable.
     return {
       status: 'error',
       message: 'An account with this email already exists.',
     }
   }
 
+  // Normal flow - create new user
   const hashedPassword = await hashPassword(password)
 
   // The unique index is the source of truth — catch the race where two

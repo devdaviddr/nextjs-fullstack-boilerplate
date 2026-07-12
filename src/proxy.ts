@@ -5,7 +5,8 @@ import { authConfig } from '@/lib/auth/config'
 
 // Next.js 16 renamed the edge "middleware" convention to "proxy". This runs on
 // the edge runtime using only the edge-safe config (no DB, no argon2). It does
-// two jobs: route protection and per-request Content-Security-Policy.
+// three jobs: route protection, role-based access control, and per-request
+// Content-Security-Policy.
 
 const { auth } = NextAuth(authConfig)
 
@@ -13,6 +14,14 @@ const { auth } = NextAuth(authConfig)
 const PROTECTED_PREFIXES = ['/dashboard', '/settings']
 /** Auth pages an already-signed-in user should be bounced away from. */
 const AUTH_ROUTES = ['/login', '/register']
+/**
+ * Optional: gate route prefixes by role at the edge (JWT claim only, no DB).
+ * The admin UI here is gated server-side in `/settings`, so this is empty by
+ * default. Add entries to protect custom routes; unauthorized users are sent to
+ * `/403`. Example:
+ *   const ROLE_REQUIRED = { '/admin': ['admin'], '/billing': ['admin', 'member'] }
+ */
+const ROLE_REQUIRED: Record<string, string[]> = {}
 
 function buildCsp(nonce: string, isDev: boolean): string {
   // Dev needs 'unsafe-eval'/'unsafe-inline' for React Refresh + Turbopack HMR;
@@ -44,6 +53,9 @@ export default auth((req) => {
   const { nextUrl } = req
   const { pathname } = nextUrl
   const isLoggedIn = !!req.auth?.user
+  // Roles come from the session, populated by the jwt/session callbacks (the
+  // JWT carries the role claim, so there's no DB round-trip at the edge).
+  const roles = req.auth?.user?.roles ?? []
 
   // --- Route protection ---
   const isProtected = PROTECTED_PREFIXES.some(
@@ -56,6 +68,16 @@ export default auth((req) => {
   }
   if (isLoggedIn && AUTH_ROUTES.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', nextUrl))
+  }
+
+  // --- Role-based access control (JWT only, no DB round-trip) ---
+  for (const [prefix, requiredRoles] of Object.entries(ROLE_REQUIRED)) {
+    if (pathname.startsWith(prefix)) {
+      const hasRole = requiredRoles.some((r) => roles.includes(r))
+      if (!hasRole) {
+        return NextResponse.redirect(new URL('/403', nextUrl))
+      }
+    }
   }
 
   // --- Content-Security-Policy (per-request nonce) ---
