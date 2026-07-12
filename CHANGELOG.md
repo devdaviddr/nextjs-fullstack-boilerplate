@@ -8,6 +8,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-13
+
 ### Added
 
 - Automated accessibility regression checks (`tests/e2e/a11y.spec.ts`) — axe
@@ -19,6 +21,14 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   the largest untested surface in the app) — create/update/delete user,
   role assignment, and invite completion, including the self-role-removal,
   self-delete, duplicate-email, and unknown-role guard paths.
+
+### Changed
+
+- Roadmap reframed around forking this boilerplate per POC/portfolio project
+  and self-hosting a single instance (Docker + Cloudflare Tunnel), not scaling
+  out across a cluster. Cloudflare Tunnel deployment is now marked shipped;
+  file uploads (MinIO), SEO/public-facing metadata, and automated backups are
+  the near-term priorities; shared-store rate limiting is deprioritized.
 
 ## [0.5.0] - 2026-07-13
 
@@ -126,7 +136,9 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.3.0...v0.3.1
