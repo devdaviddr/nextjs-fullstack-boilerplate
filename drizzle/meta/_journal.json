@@ -15,6 +15,13 @@
       "when": 1783801452234,
       "tag": "0001_wonderful_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783884173066,
+      "tag": "0002_left_morlocks",
+      "breakpoints": true
     }
   ]
 }

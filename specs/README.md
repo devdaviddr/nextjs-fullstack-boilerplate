@@ -43,13 +43,14 @@ other — one isn't a substitute for the other.
 
 ## Index
 
-| Spec                                         | Title                            | Status  | Release |
-| -------------------------------------------- | -------------------------------- | ------- | ------- |
-| [0001](0001-project-foundation.md)           | Project foundation               | Shipped | v0.1.0  |
-| [0002](0002-pwa-and-app-shell.md)            | PWA & responsive app shell       | Shipped | v0.2.0  |
-| [0003](0003-security-hardening.md)           | Production security hardening    | Shipped | v0.3.0  |
-| [0004](0004-graphify-claude-integration.md)  | graphify & CLAUDE.md integration | Shipped | v0.3.1  |
-| [0005](0005-cloudflare-tunnel-deployment.md) | Cloudflare Tunnel deployment     | Shipped | v0.4.0  |
+| Spec                                         | Title                            | Status   | Release |
+| -------------------------------------------- | -------------------------------- | -------- | ------- |
+| [0001](0001-project-foundation.md)           | Project foundation               | Shipped  | v0.1.0  |
+| [0002](0002-pwa-and-app-shell.md)            | PWA & responsive app shell       | Shipped  | v0.2.0  |
+| [0003](0003-security-hardening.md)           | Production security hardening    | Shipped  | v0.3.0  |
+| [0004](0004-graphify-claude-integration.md)  | graphify & CLAUDE.md integration | Shipped  | v0.3.1  |
+| [0005](0005-cloudflare-tunnel-deployment.md) | Cloudflare Tunnel deployment     | Shipped  | v0.4.0  |
+| [0006](0006-rbac.md)                         | Role-Based Access Control (RBAC) | Proposed | —       |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).

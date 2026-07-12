@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 
 import { db } from '@/db'
-import { users } from '@/db/schema'
+import { users, roles, userRoles } from '@/db/schema'
 import { authConfig } from './config'
 import { fakeVerifyPassword, verifyPassword } from './password'
 import { logger } from '@/lib/logger'
@@ -11,9 +11,33 @@ import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
 import { loginSchema } from '@/lib/validations/auth'
 
+// Import types to trigger module augmentation
+import './types'
+
 /** Best-effort client IP from a Request's proxy headers. */
 function ipFromRequest(request: Request | undefined): string {
   return request ? clientIpFromHeaders(request.headers) : 'unknown'
+}
+
+/**
+ * Fetch role names for a user from the database.
+ * Used in authorize() and jwt callback to populate token.roles.
+ */
+async function getUserRoles(userId: string): Promise<string[]> {
+  const userRoleRows = await db
+    .select({ roleId: userRoles.roleId })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId))
+
+  if (userRoleRows.length === 0) return []
+
+  const roleIds = userRoleRows.map((r) => r.roleId)
+  const roleRows = await db
+    .select({ name: roles.name })
+    .from(roles)
+    .where(inArray(roles.id, roleIds))
+
+  return roleRows.map((r) => r.name)
 }
 
 /**
@@ -26,6 +50,24 @@ function ipFromRequest(request: Request | undefined): string {
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    /** Populate roles on the JWT at sign-in and refresh on session update. */
+    async jwt({ token, user, trigger }) {
+      if (user) {
+        token.id = user.id
+        token.roles = user.roles ?? []
+      }
+      // Back-fill id from `sub` so pre-RBAC tokens self-heal instead of showing
+      // a blank id and no roles.
+      token.id ??= token.sub
+      // Fetch roles on an explicit session update, or when a token has none yet.
+      if ((trigger === 'update' || token.roles === undefined) && token.id) {
+        token.roles = await getUserRoles(token.id as string)
+      }
+      return token
+    },
+  },
   providers: [
     Credentials({
       // We drive our own /login and /register UI, so no default form fields.
@@ -67,11 +109,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await verifyPassword(user.hashedPassword, password)
         if (!isValid) return null
 
+        const userRolesArray = await getUserRoles(user.id)
+
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
+          roles: userRolesArray,
         }
       },
     }),

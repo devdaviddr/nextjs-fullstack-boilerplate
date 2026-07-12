@@ -61,6 +61,8 @@ const TOO_MANY = 'Too many attempts. Please wait a few minutes and try again.'
  * Register a new credentials user, then sign them in. On success this throws a
  * redirect (handled by Next.js) to the dashboard; on failure it returns a
  * form state describing what went wrong.
+ *
+ * Also handles "claiming" an admin-created account (user exists but has no password).
  */
 export async function registerAction(
   _prev: AuthFormState,
@@ -87,18 +89,45 @@ export async function registerAction(
 
   const { name, email, password } = parsed.data
 
-  // Fast path — avoid an expensive hash on the common "already taken" case.
+  // Check if user exists
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
-    columns: { id: true },
+    columns: { id: true, hashedPassword: true },
   })
+
   if (existing) {
+    // If user exists but has no password, this is an admin-created account being claimed
+    if (!existing.hashedPassword) {
+      const hashedPassword = await hashPassword(password)
+      await db
+        .update(users)
+        .set({ hashedPassword, name: name || null })
+        .where(eq(users.id, existing.id))
+
+      try {
+        await signIn('credentials', {
+          email,
+          password,
+          redirectTo: '/dashboard',
+        })
+      } catch (error) {
+        if (isNextRedirect(error)) throw error
+        return {
+          status: 'error',
+          message: 'Account claimed, but sign-in failed. Please log in.',
+        }
+      }
+      return { status: 'idle' }
+    }
+
+    // User exists and has password - normal error
     return {
       status: 'error',
       message: 'An account with this email already exists.',
     }
   }
 
+  // Normal flow - create new user
   const hashedPassword = await hashPassword(password)
 
   // The unique index is the source of truth — catch the race where two

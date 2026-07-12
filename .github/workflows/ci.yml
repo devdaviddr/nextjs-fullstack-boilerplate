@@ -64,6 +64,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply database migrations
         run: pnpm db:migrate
+      - name: Seed (demo admin user + roles, used by E2E)
+        run: pnpm db:seed
       - name: Build
         run: pnpm build
       - name: Install Playwright browsers
