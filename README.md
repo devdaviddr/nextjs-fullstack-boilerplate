@@ -22,6 +22,8 @@ A production-grade starting point for full-stack web apps — authentication, da
 An opinionated, batteries-included template built on **Next.js 16** (App Router, RSC, Server Actions) with:
 
 - 🔐 **Email + password auth** via Auth.js v5 — Argon2id hashing, JWT sessions, edge-protected routes
+- 🧑‍⚖️ **Role-based access control** — roles on the JWT, edge + server guards, admin user-management, invite-based account claim
+- ✉️ **Optional email** — toggleable, provider-agnostic SMTP delivery (off by default), wired to invite links
 - 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema, committed migrations
 - 📱 **PWA + responsive app shell** — installable, offline-resilient, mobile-to-desktop layout
 - 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
@@ -68,16 +70,17 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 
 ## Tech stack
 
-| Layer      | Choice                                                     |
-| ---------- | ---------------------------------------------------------- |
-| Framework  | Next.js 16 · React 19 · TypeScript 5.9 (strict)            |
-| Auth       | Auth.js (NextAuth) v5 — Credentials + JWT, Argon2id        |
-| Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                  |
-| UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                 |
-| Validation | Zod (shared client/server schemas)                         |
-| Testing    | Vitest + Testing Library · Playwright                      |
-| Tooling    | ESLint (flat) · Prettier · Husky · lint-staged             |
-| Delivery   | Multi-stage Docker (standalone, non-root) · GitHub Actions |
+| Layer      | Choice                                                      |
+| ---------- | ----------------------------------------------------------- |
+| Framework  | Next.js 16 · React 19 · TypeScript 5.9 (strict)             |
+| Auth       | Auth.js (NextAuth) v5 — Credentials + JWT, Argon2id, RBAC   |
+| Email      | Optional SMTP via nodemailer — off by default, any provider |
+| Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                   |
+| UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                  |
+| Validation | Zod (shared client/server schemas)                          |
+| Testing    | Vitest + Testing Library · Playwright                       |
+| Tooling    | ESLint (flat) · Prettier · Husky · lint-staged              |
+| Delivery   | Multi-stage Docker (standalone, non-root) · GitHub Actions  |
 
 ## Project structure
 
@@ -86,8 +89,8 @@ src/
 ├── app/            # App Router: (auth) + (dashboard) groups, api/, PWA manifest & offline
 ├── components/     # auth · pwa · shell · ui (shadcn)
 ├── db/             # Drizzle schema, client, migrate & seed scripts
-├── lib/            # auth (config/actions/session), validations, env, shell nav, utils
-└── proxy.ts        # edge route protection (Next 16 "proxy" convention)
+├── lib/            # auth (config/actions/session/rbac/invite), email, validations, env, shell nav
+└── proxy.ts        # edge route protection + role gating (Next 16 "proxy" convention)
 ```
 
 Full tree and rationale in **[Architecture](docs/architecture.md)**.
@@ -109,9 +112,11 @@ paths. Full setup and usage: **[Deployment](docs/deployment.md)**.
 
 - [x] Credentials auth · Drizzle/Postgres · Docker · CI · PWA · responsive app shell
 - [x] Auth rate limiting · nonce CSP + HSTS · structured-logging shim
+- [x] Role-based access control (RBAC) — roles on the JWT, edge/server guards, admin user-management
+- [x] Invite-based account claim — passwordless users, single-use hashed tokens
+- [x] Optional email delivery — toggleable, provider-agnostic SMTP (off by default)
 - [ ] OAuth providers (GitHub, Google) — schema is already adapter-ready
 - [ ] Email verification & password reset
-- [ ] Role-based access control (RBAC)
 - [ ] Web Push notifications (service-worker hooks are in place)
 - [ ] Shared-store rate limiting (Upstash) & error tracking (Sentry)
 - [ ] Dark-mode toggle & theming

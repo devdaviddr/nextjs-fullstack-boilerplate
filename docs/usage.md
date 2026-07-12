@@ -21,6 +21,18 @@ Copy `.env.example` → `.env`. All variables are validated at boot in `src/lib/
 | `NODE_ENV`            |    –     | `development` \| `test` \| `production`                 |
 | `LOG_LEVEL`           |    –     | `debug` \| `info` \| `warn` \| `error`                  |
 | `RATE_LIMIT_DISABLED` |    –     | `true` to disable the in-memory auth rate limiter       |
+| `EMAIL_ENABLED`       |    –     | `true` to turn on email; requires the SMTP vars below   |
+| `EMAIL_FROM`          |    †     | From address (required when `EMAIL_ENABLED=true`)       |
+| `SMTP_HOST`           |    †     | SMTP host (required when `EMAIL_ENABLED=true`)          |
+| `SMTP_PORT`           |    †     | SMTP port, e.g. `587` or `465` (required when enabled)  |
+| `SMTP_USER`           |    –     | SMTP username (if the server requires auth)             |
+| `SMTP_PASSWORD`       |    –     | SMTP password (if the server requires auth)             |
+| `SMTP_SECURE`         |    –     | `true` for implicit TLS; auto-true on port `465`        |
+
+† Required only when `EMAIL_ENABLED=true`. Setting the toggle without a provider
+fails fast at boot. SMTP is provider-agnostic — Resend, SendGrid, Mailgun, SES,
+Postmark and Gmail all expose SMTP credentials. See
+[Features → Email](features.md#email-optional).
 
 ## Scripts
 
@@ -92,6 +104,9 @@ Husky installs a `pre-commit` hook that runs **lint-staged** (ESLint + Prettier 
 | Add a table            | Edit `src/db/schema.ts`, then `pnpm db:generate && pnpm db:migrate`                                            |
 | Add a shadcn component | `pnpm dlx shadcn@latest add <name>`                                                                            |
 | Add OAuth              | Enable `DrizzleAdapter(db)` and add providers in `src/lib/auth/index.ts` (schema is adapter-ready)             |
+| Gate a route by role   | Add a prefix → roles entry to `ROLE_REQUIRED` in `src/proxy.ts`; assert `requireRole('admin')` in the action   |
+| Add a role             | Insert into the `roles` table (see `src/db/seed.ts`); assign via the Settings admin panel or `assignRoles`     |
+| Enable email           | Set `EMAIL_ENABLED=true` + the `SMTP_*` vars in `.env`; templates live in `src/lib/email/templates.ts`         |
 | Add an env var         | Add it to the schema in `src/lib/env.ts` and to `.env.example`                                                 |
 
 ## Production checklist
@@ -106,3 +121,6 @@ Husky installs a `pre-commit` hook that runs **lint-staged** (ESLint + Prettier 
       is already in place.
 - [ ] Serve over HTTPS so the service worker registers and the app is installable.
 - [ ] Replace placeholder icons (`pnpm gen:icons`) and set the manifest name/colors.
+- [ ] If using email, set `EMAIL_ENABLED=true` with valid `SMTP_*` credentials and a
+      deliverable `EMAIL_FROM` (SPF/DKIM aligned) — leave it off to keep sends inert.
+- [ ] Seed or assign an initial `admin` role so the Settings user-management panel is reachable.
