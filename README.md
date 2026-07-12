@@ -110,17 +110,35 @@ paths. Full setup and usage: **[Deployment](docs/deployment.md)**.
 
 ## Roadmap
 
+This boilerplate is meant to be forked per project — POCs and portfolio pieces
+alike — and self-hosted on a single home server (Docker + Cloudflare Tunnel),
+not scaled out across a cluster. The roadmap favors features every one of
+those apps needs (file uploads, backups, SEO) over infrastructure only a
+multi-instance deployment would benefit from.
+
 - [x] Credentials auth · Drizzle/Postgres · Docker · CI · PWA · responsive app shell
 - [x] Auth rate limiting · nonce CSP + HSTS · structured-logging shim
 - [x] Role-based access control (RBAC) — roles on the JWT, edge/server guards, admin user-management
 - [x] Invite-based account claim — passwordless users, single-use hashed tokens
 - [x] Optional email delivery — toggleable, provider-agnostic SMTP (off by default)
+- [x] Cloudflare Tunnel deployment — no open ports, no reverse proxy, no certs
+- [ ] File uploads & object storage — self-hosted **MinIO** (S3-compatible) as a
+      docker-compose service, presigned upload/download URLs, size/type
+      validation, per-user quota
+- [ ] SEO & public-facing metadata — Open Graph/Twitter cards, sitemap.xml,
+      robots.txt, per-page metadata (this app is meant to be shown to visitors)
+- [ ] Automated backups — nightly Postgres dump + MinIO data sync to a volume
+      (with an optional offsite copy), documented restore path — one box means
+      no managed-service safety net
 - [ ] OAuth providers (GitHub, Google) — schema is already adapter-ready
 - [ ] Email verification & password reset
-- [ ] Web Push notifications (service-worker hooks are in place)
-- [ ] Shared-store rate limiting (Upstash) & error tracking (Sentry)
+- [ ] Error tracking (Sentry, opt-in) — same off-by-default pattern as email
 - [ ] Dark-mode toggle & theming
+- [ ] Cloudflare Web Analytics — script-only, no cookies, lightweight visitor stats
+- [ ] Web Push notifications (service-worker hooks are in place)
 - [ ] Internationalization (i18n)
+- [ ] Shared-store rate limiting (Upstash) — only relevant if this ever runs as
+      more than one instance; deprioritized for the single-box deployment model
 
 ## Contributing
 

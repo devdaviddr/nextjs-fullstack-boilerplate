@@ -1,0 +1,79 @@
+import AxeBuilder from '@axe-core/playwright'
+import { expect, test } from '@playwright/test'
+
+// Automated accessibility regression checks (WCAG 2.0/2.1 A + AA) for the
+// pages most likely to be touched by real visitors and admins. This backs the
+// accessibility claims in docs/features.md — a manual pass alone can't catch
+// a regression, this can.
+
+test('login page has no detectable a11y violations', async ({ page }) => {
+  await page.goto('/login')
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('register page has no detectable a11y violations', async ({ page }) => {
+  await page.goto('/register')
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('dashboard (signed in) has no detectable a11y violations', async ({
+  page,
+}) => {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill('demo@example.com')
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('settings admin panel has no detectable a11y violations', async ({
+  page,
+}) => {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill('demo@example.com')
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+
+  await page.goto('/settings')
+  await expect(page.getByRole('button', { name: 'Add User' })).toBeVisible()
+
+  // Include the "Add User" dialog — a common source of focus-trap/label bugs.
+  await page.getByRole('button', { name: 'Add User' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('403 page has no detectable a11y violations', async ({ page }) => {
+  const email = `noadmin-a11y+${Date.now()}@example.com`
+  await page.goto('/register')
+  await page.getByLabel('Name').fill('No Admin')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByLabel('Confirm password').fill('Password123')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+
+  // A member has no admin role — proxy.ts should redirect a settings-only
+  // guarded path. Navigate straight to /403 to check its own rendering too.
+  await page.goto('/403')
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
