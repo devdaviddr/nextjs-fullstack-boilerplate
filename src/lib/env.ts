@@ -8,20 +8,67 @@ import { z } from 'zod'
  * `undefined` deep inside a request. Keep this file dependency-free (only
  * `zod`) so it is safe to import from any runtime, including the edge.
  */
-const envSchema = z.object({
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid connection URL'),
-  AUTH_SECRET: z
-    .string()
-    .min(1, 'AUTH_SECRET is required — generate one with `npx auth secret`'),
-  AUTH_URL: z.string().url().optional(),
-  AUTH_TRUST_HOST: z
-    .string()
-    .optional()
-    .transform((v) => v === 'true'),
-  NODE_ENV: z
-    .enum(['development', 'test', 'production'])
-    .default('development'),
-})
+/** Treat unset AND empty-string env vars as "not provided". */
+const optionalStr = z
+  .string()
+  .optional()
+  .transform((v) => (v === undefined || v === '' ? undefined : v))
+
+const envSchema = z
+  .object({
+    DATABASE_URL: z.string().url('DATABASE_URL must be a valid connection URL'),
+    AUTH_SECRET: z
+      .string()
+      .min(1, 'AUTH_SECRET is required — generate one with `npx auth secret`'),
+    AUTH_URL: z.string().url().optional(),
+    AUTH_TRUST_HOST: z
+      .string()
+      .optional()
+      .transform((v) => v === 'true'),
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+
+    // --- Email (opt-in) ---------------------------------------------------
+    // Everything email-related is OFF unless EMAIL_ENABLED=true AND a provider
+    // (SMTP) is configured. See src/lib/email/. SMTP is provider-agnostic:
+    // Resend / SendGrid / Mailgun / SES / Gmail all expose SMTP credentials.
+    EMAIL_ENABLED: z
+      .string()
+      .optional()
+      .transform((v) => v === 'true'),
+    EMAIL_FROM: z
+      .string()
+      .email('EMAIL_FROM must be a valid email address')
+      .optional(),
+    SMTP_HOST: optionalStr,
+    SMTP_PORT: z.coerce.number().int().positive().max(65535).optional(),
+    SMTP_USER: optionalStr,
+    SMTP_PASSWORD: optionalStr,
+    SMTP_SECURE: z
+      .string()
+      .optional()
+      .transform((v) => v === 'true'),
+  })
+  .superRefine((val, ctx) => {
+    // If email is toggled on, a provider MUST be configured — fail fast at boot
+    // rather than silently dropping mail (or throwing on first send).
+    if (!val.EMAIL_ENABLED) return
+    const requiredWhenEnabled: Array<[string, unknown]> = [
+      ['EMAIL_FROM', val.EMAIL_FROM],
+      ['SMTP_HOST', val.SMTP_HOST],
+      ['SMTP_PORT', val.SMTP_PORT],
+    ]
+    for (const [key, value] of requiredWhenEnabled) {
+      if (value === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} is required when EMAIL_ENABLED=true`,
+        })
+      }
+    }
+  })
 
 const parsed = envSchema.safeParse(process.env)
 

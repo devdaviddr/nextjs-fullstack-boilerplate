@@ -6,6 +6,9 @@ import { db } from '@/db'
 import { users, roles, userRoles } from '@/db/schema'
 import { requireRole, ForbiddenError } from '@/lib/auth/rbac'
 import { createInviteToken } from '@/lib/auth/invite'
+import { sendEmail, isEmailEnabled } from '@/lib/email'
+import { inviteEmail } from '@/lib/email/templates'
+import { env } from '@/lib/env'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
 import { headers } from 'next/headers'
@@ -23,6 +26,15 @@ import { logger } from '@/lib/logger'
 async function getClientIp(): Promise<string> {
   const h = await headers()
   return clientIpFromHeaders(h)
+}
+
+/** Absolute origin for building links in emails. Prefers AUTH_URL, else the request. */
+async function getBaseUrl(): Promise<string> {
+  if (env.AUTH_URL) return env.AUTH_URL.replace(/\/+$/, '')
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
+  const proto = h.get('x-forwarded-proto') ?? 'http'
+  return `${proto}://${host}`
 }
 
 /** Rate limit key for admin actions. */
@@ -52,6 +64,8 @@ export interface UserWithRoles {
 /** createUser also returns the one-time invite token for the admin to share. */
 export interface CreatedUser extends UserWithRoles {
   inviteToken: string
+  /** True when the invite link was emailed (email enabled + configured + sent). */
+  emailSent: boolean
 }
 
 /**
@@ -199,6 +213,21 @@ export async function createUser(input: CreateUserInput): Promise<CreatedUser> {
     throw new Error('Failed to retrieve created user')
   }
 
+  // Deliver the invite by email when email is enabled + configured. Sending is
+  // best-effort: the admin always gets the copy-able link back as a fallback, so
+  // a mail failure never blocks user creation.
+  let emailSent = false
+  if (isEmailEnabled()) {
+    const baseUrl = await getBaseUrl()
+    const inviteUrl = `${baseUrl}/register?invite=${encodeURIComponent(
+      token,
+    )}&email=${encodeURIComponent(withRoles.email)}`
+    const result = await sendEmail(
+      inviteEmail({ to: withRoles.email, inviteUrl }),
+    )
+    emailSent = result.sent
+  }
+
   return {
     id: withRoles.id,
     name: withRoles.name,
@@ -211,6 +240,7 @@ export async function createUser(input: CreateUserInput): Promise<CreatedUser> {
     })),
     hasPassword: false,
     inviteToken: token,
+    emailSent,
   }
 }
 

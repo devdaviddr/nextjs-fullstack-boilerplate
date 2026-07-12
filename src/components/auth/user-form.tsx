@@ -72,6 +72,7 @@ export function UserForm({
   const [isPending, setIsPending] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(
@@ -102,6 +103,7 @@ export function UserForm({
           roleIds: values.roleIds,
         })
         // Show the one-time invite link; the dialog stays open until "Done".
+        setEmailSent(created.emailSent)
         setInviteUrl(
           `${window.location.origin}/register?invite=${encodeURIComponent(
             created.inviteToken,
@@ -133,6 +135,7 @@ export function UserForm({
     if (!next) {
       setFormError(null)
       setInviteUrl(null)
+      setEmailSent(false)
     }
     onOpenChange(next)
   }
@@ -144,13 +147,20 @@ export function UserForm({
           <DialogTitle>{inviteUrl ? 'User created' : title}</DialogTitle>
           <DialogDescription>
             {inviteUrl
-              ? 'Send this one-time invite link so they can set a password.'
+              ? emailSent
+                ? 'An invite email was sent. You can also copy the link below.'
+                : 'Send this one-time invite link so they can set a password.'
               : description}
           </DialogDescription>
         </DialogHeader>
 
         {inviteUrl ? (
           <div className="space-y-3">
+            {emailSent && (
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                ✓ Invite email sent
+              </p>
+            )}
             <div className="flex gap-2">
               <Input
                 readOnly
