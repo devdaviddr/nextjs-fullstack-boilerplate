@@ -8,6 +8,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-13
+
 ### Added
 
 - Role-based access control ([spec 0006](specs/0006-rbac.md)): `roles` / `user_roles`
@@ -21,6 +23,11 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   provider is configured — enabling it without a provider fails fast at boot, and
   when disabled every send is a safe no-op. Invite links are emailed when enabled and
   always shown in the admin UI as a fallback.
+
+### Changed
+
+- CI and CodeQL now run on `develop` as well as `main`, so feature PRs into the
+  integration branch are gated by the full pipeline.
 
 ## [0.4.1] - 2026-07-12
 
