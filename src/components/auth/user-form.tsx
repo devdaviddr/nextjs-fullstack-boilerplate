@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, type Resolver } from 'react-hook-form'
 
@@ -69,8 +69,9 @@ export function UserForm({
       ? 'Update user information.'
       : 'Select roles for this user.'
 
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(
@@ -90,38 +91,49 @@ export function UserForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialData?.id])
 
-  const onSubmit = form.handleSubmit((values) => {
+  const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null)
-    startTransition(async () => {
-      try {
-        if (isCreate) {
-          await createUser({
-            name: values.name ?? '',
-            email: values.email ?? '',
-            roleIds: values.roleIds,
-          })
-        } else if (isEdit && initialData?.id) {
-          await updateUser(initialData.id, {
-            name: values.name,
-            email: values.email,
-            roleIds: values.roleIds,
-          })
-        } else if (isRoles && initialData?.id) {
-          await assignRoles({ userId: initialData.id, roleIds: values.roleIds })
-        }
-        onSuccess?.()
-      } catch (err) {
-        setFormError(
-          err instanceof Error
-            ? err.message
-            : 'Something went wrong. Please try again.',
+    setIsPending(true)
+    try {
+      if (isCreate) {
+        const created = await createUser({
+          name: values.name ?? '',
+          email: values.email ?? '',
+          roleIds: values.roleIds,
+        })
+        // Show the one-time invite link; the dialog stays open until "Done".
+        setInviteUrl(
+          `${window.location.origin}/register?invite=${encodeURIComponent(
+            created.inviteToken,
+          )}&email=${encodeURIComponent(created.email)}`,
         )
+        return
+      } else if (isEdit && initialData?.id) {
+        await updateUser(initialData.id, {
+          name: values.name,
+          email: values.email,
+          roleIds: values.roleIds,
+        })
+      } else if (isRoles && initialData?.id) {
+        await assignRoles({ userId: initialData.id, roleIds: values.roleIds })
       }
-    })
+      onSuccess?.()
+    } catch (err) {
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.',
+      )
+    } finally {
+      setIsPending(false)
+    }
   })
 
   function handleOpenChange(next: boolean) {
-    if (!next) setFormError(null)
+    if (!next) {
+      setFormError(null)
+      setInviteUrl(null)
+    }
     onOpenChange(next)
   }
 
@@ -129,94 +141,126 @@ export function UserForm({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{inviteUrl ? 'User created' : title}</DialogTitle>
+          <DialogDescription>
+            {inviteUrl
+              ? 'Send this one-time invite link so they can set a password.'
+              : description}
+          </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
-            {!isRoles && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ada Lovelace"
-                          {...field}
-                          disabled={isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="user@example.com"
-                          {...field}
-                          disabled={isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
-
-            <FormField
-              control={form.control}
-              name="roleIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {isEdit ? 'Roles (leave as-is to keep)' : 'Roles'}
-                  </FormLabel>
-                  <FormControl>
-                    <RoleSelector
-                      value={field.value ?? []}
-                      onChange={field.onChange}
-                      options={allRoles}
-                      disabled={isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {formError && (
-              <p className="text-destructive text-sm" role="alert">
-                {formError}
-              </p>
-            )}
-
-            <div className="flex justify-end gap-2 pt-4">
+        {inviteUrl ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                readOnly
+                value={inviteUrl}
+                onFocus={(e) => e.currentTarget.select()}
+                className="font-mono text-xs"
+              />
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={isPending}
+                onClick={() => void navigator.clipboard?.writeText(inviteUrl)}
               >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Saving…' : isCreate ? 'Create' : 'Save'}
+                Copy
               </Button>
             </div>
-          </form>
-        </Form>
+            <p className="text-muted-foreground text-xs">
+              Expires in 7 days and can be used once.
+            </p>
+            <div className="flex justify-end pt-2">
+              <Button type="button" onClick={() => onSuccess?.()}>
+                Done
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={onSubmit} className="space-y-4">
+              {!isRoles && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ada Lovelace"
+                            {...field}
+                            disabled={isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="user@example.com"
+                            {...field}
+                            disabled={isPending}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              <FormField
+                control={form.control}
+                name="roleIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {isEdit ? 'Roles (leave as-is to keep)' : 'Roles'}
+                    </FormLabel>
+                    <FormControl>
+                      <RoleSelector
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                        options={allRoles}
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {formError && (
+                <p className="text-destructive text-sm" role="alert">
+                  {formError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  disabled={isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? 'Saving…' : isCreate ? 'Create' : 'Save'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   )

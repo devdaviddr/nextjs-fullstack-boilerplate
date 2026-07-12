@@ -32,6 +32,10 @@ export const users = pgTable(
     image: text('image'),
     // Null for accounts created purely via OAuth; set for credentials users.
     hashedPassword: text('hashed_password'),
+    // Invite flow: an admin-created (passwordless) user can only claim their
+    // account with this token. Stored hashed; cleared once the account is claimed.
+    inviteTokenHash: text('invite_token_hash'),
+    inviteExpires: timestamp('invite_expires', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date' })
       .notNull()

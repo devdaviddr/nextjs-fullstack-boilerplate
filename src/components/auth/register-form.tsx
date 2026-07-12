@@ -10,11 +10,19 @@ import { Label } from '@/components/ui/label'
 import { registerAction } from '@/lib/auth/actions'
 import { initialAuthState } from '@/lib/auth/form-state'
 
-export function RegisterForm() {
+export function RegisterForm({
+  invite,
+  defaultEmail,
+}: {
+  invite?: string
+  defaultEmail?: string
+}) {
   const [state, formAction] = useActionState(registerAction, initialAuthState)
+  const isInvite = !!invite
 
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
+      {invite && <input type="hidden" name="invite" value={invite} />}
       <FormMessage message={state.message} />
 
       <div className="flex flex-col gap-2">
@@ -39,6 +47,8 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
+          defaultValue={defaultEmail}
+          readOnly={isInvite && !!defaultEmail}
           required
           aria-invalid={!!state.fieldErrors?.email}
         />

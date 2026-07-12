@@ -20,7 +20,9 @@ test('a non-admin user does not see the admin panel', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add User' })).toHaveCount(0)
 })
 
-test('an admin can view the panel and create a user', async ({ page }) => {
+test('an admin invites a user who then claims the account', async ({
+  page,
+}) => {
   // Sign in as the seeded admin.
   await page.goto('/login')
   await page.getByLabel('Email').fill('demo@example.com')
@@ -31,13 +33,12 @@ test('an admin can view the panel and create a user', async ({ page }) => {
   await page.goto('/settings')
   await expect(page.getByRole('button', { name: 'Add User' })).toBeVisible()
 
-  const newEmail = `created+${Date.now()}@example.com`
+  const email = `invited+${Date.now()}@example.com`
   await page.getByRole('button', { name: 'Add User' }).click()
 
   const dialog = page.getByRole('dialog')
-  await dialog.getByPlaceholder('Ada Lovelace').fill('Created User')
-  await dialog.getByPlaceholder('user@example.com').fill(newEmail)
-  // Pick a role (required) — click the checkbox inside the "member" option.
+  await dialog.getByPlaceholder('Ada Lovelace').fill('Invited User')
+  await dialog.getByPlaceholder('user@example.com').fill(email)
   await dialog
     .locator('label')
     .filter({ hasText: /^member$/ })
@@ -45,6 +46,19 @@ test('an admin can view the panel and create a user', async ({ page }) => {
     .click()
   await dialog.getByRole('button', { name: 'Create' }).click()
 
-  // Dialog closes and the new user appears in the table.
-  await expect(page.getByText(newEmail)).toBeVisible()
+  // The one-time invite link is shown; wait for that view, grab it, then finish.
+  await expect(dialog.getByRole('button', { name: 'Done' })).toBeVisible()
+  const inviteUrl = await dialog.getByRole('textbox').inputValue()
+  expect(inviteUrl).toContain('/register?invite=')
+  await dialog.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByText(email)).toBeVisible() // now in the table
+
+  // The invited user (fresh session) claims the account via the link.
+  await page.context().clearCookies()
+  await page.goto(inviteUrl)
+  await page.getByLabel('Name').fill('Invited User')
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByLabel('Confirm password').fill('Password123')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
 })

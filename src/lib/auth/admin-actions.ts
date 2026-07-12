@@ -1,11 +1,11 @@
 'use server'
 
 import { eq, inArray } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
 
 import { db } from '@/db'
 import { users, roles, userRoles } from '@/db/schema'
 import { requireRole, ForbiddenError } from '@/lib/auth/rbac'
+import { createInviteToken } from '@/lib/auth/invite'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
 import { headers } from 'next/headers'
@@ -47,6 +47,11 @@ export interface UserWithRoles {
   createdAt: Date
   roles: { id: string; name: string; description: string | null }[]
   hasPassword: boolean
+}
+
+/** createUser also returns the one-time invite token for the admin to share. */
+export interface CreatedUser extends UserWithRoles {
+  inviteToken: string
 }
 
 /**
@@ -118,9 +123,7 @@ export async function getAllRoles(): Promise<
  * Create a new user (admin). No password — user sets it on first login.
  * Admin only.
  */
-export async function createUser(
-  input: CreateUserInput,
-): Promise<UserWithRoles> {
+export async function createUser(input: CreateUserInput): Promise<CreatedUser> {
   await requireRole('admin')
   await checkAdminRateLimit('create-user')
 
@@ -149,12 +152,17 @@ export async function createUser(
     throw new Error('One or more roles do not exist.')
   }
 
+  // Mint an invite token; the account can only be claimed with it via /register.
+  const { token, tokenHash, expires } = createInviteToken()
+
   const [user] = await db
     .insert(users)
     .values({
       name,
       email,
-      hashedPassword: null, // No password — user sets on first login
+      hashedPassword: null, // No password — user sets it when they claim the invite
+      inviteTokenHash: tokenHash,
+      inviteExpires: expires,
     })
     .returning()
 
@@ -167,7 +175,6 @@ export async function createUser(
     .insert(userRoles)
     .values(roleIds.map((roleId) => ({ userId: user.id, roleId })))
 
-  revalidatePath('/settings')
   logger.info('Admin created user', {
     adminId: (await getCurrentSession())?.user.id,
     userId: user.id,
@@ -203,6 +210,7 @@ export async function createUser(
       description: ur.role.description,
     })),
     hasPassword: false,
+    inviteToken: token,
   }
 }
 
@@ -287,7 +295,6 @@ export async function updateUser(
     }
   }
 
-  revalidatePath('/settings')
   logger.info('Admin updated user', {
     adminId: currentUserId,
     targetUserId: userId,
@@ -353,7 +360,6 @@ export async function deleteUser(userId: string): Promise<void> {
   // Cascade deletes userRoles via FK
   await db.delete(users).where(eq(users.id, userId))
 
-  revalidatePath('/settings')
   logger.info('Admin deleted user', {
     adminId: currentUserId,
     targetUserId: userId,
@@ -414,7 +420,6 @@ export async function assignRoles(input: AssignRolesInput): Promise<void> {
       .values(roleIds.map((roleId) => ({ userId, roleId })))
   }
 
-  revalidatePath('/settings')
   logger.info('Admin assigned roles', {
     adminId: currentUserId,
     targetUserId: userId,
