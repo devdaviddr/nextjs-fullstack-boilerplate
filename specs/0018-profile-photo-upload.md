@@ -1,8 +1,8 @@
 ---
 id: 0018
 title: Profile photo upload
-status: Proposed
-release: '—'
+status: Shipped
+release: v0.7.0
 created: 2026-07-13
 updated: 2026-07-13
 ---
@@ -115,24 +115,34 @@ it's wired up and simply unused.
 
 ## Acceptance criteria
 
-- [ ] Uploading a photo in Settings updates the avatar shown there and in
-      the app shell topbar without a page reload or re-login.
-- [ ] Uploading a second photo replaces the first — exactly one avatar
-      object exists in MinIO per user afterward (the old one is deleted).
-- [ ] Removing a photo clears it everywhere it's displayed and deletes the
-      stored object.
-- [ ] An oversized or non-image file is rejected with a clear inline error,
+- [x] Uploading a photo in Settings updates the avatar shown there and in
+      the app shell topbar without a page reload or re-login — required
+      fixing a real bug: `useSession().update()` called with no argument is
+      just a GET re-fetch and never reruns the `jwt` callback's
+      `trigger === 'update'` branch; `update({})` does. E2E-verified.
+- [x] Uploading a second photo replaces the first — exactly one avatar
+      object exists in MinIO per user afterward (the old one is deleted) —
+      E2E-verified (the old object's URL 404s after the swap).
+- [x] Removing a photo clears it everywhere it's displayed and deletes the
+      stored object — E2E-verified.
+- [x] An oversized or non-image file is rejected with a clear inline error,
       verified against the actual production Docker build, not just
       `next dev` (spec 0007 found that thrown Server Action errors are
       redacted in production; this reuses the `{ ok, error }` return
       pattern, not `throw`).
-- [ ] Avatar storage counts toward the user's existing per-user quota —
-      uploading a large avatar leaves correspondingly less quota for other
-      files.
-- [ ] Deleting a user (admin action) also deletes their avatar object — the
-      existing `deleteAllFilesForUser` cleanup already covers this since the
-      avatar is just another `files` row, verified rather than assumed.
-- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
+- [x] Avatar storage counts toward the user's existing per-user quota —
+      unit-tested (shared `validateUpload` quota check, avatar-specific
+      size/type overrides).
+- [x] Deleting a user (admin action) also deletes their avatar object —
+      E2E-verified end to end (admin deletes a user with an avatar; its old
+      URL 404s afterward), not just assumed from the existing
+      `deleteAllFilesForUser` wiring.
+- [x] A real accessibility regression was caught and fixed along the way:
+      the new `AvatarFallback` (`bg-muted text-muted-foreground`, shadcn's
+      default) failed WCAG AA contrast (4.34:1, needs 4.5:1) at small sizes
+      — caught by the existing `tests/e2e/a11y.spec.ts` suite, fixed by
+      switching to `text-foreground`.
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
       pass.
 
 ## Security & privacy

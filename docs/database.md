@@ -8,16 +8,16 @@ PostgreSQL 17 accessed through [Drizzle ORM](https://orm.drizzle.team) with a `p
 
 Defined in `src/db/schema.ts`. Tables follow the Auth.js Drizzle-adapter conventions so OAuth can be added later without a rewrite.
 
-| Table                 | Purpose                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`               | Accounts. `hashed_password` (null for OAuth-only or unclaimed invited users), `invite_token_hash` + `invite_expires` (single-use invite claim), timestamps, unique email index. |
-| `roles`               | Named roles (`admin`, `member`, …) — unique name + optional description.                                                                                                        |
-| `user_roles`          | Many-to-many join of users ↔ roles (composite PK; cascades on user/role delete).                                                                                                |
-| `accounts`            | OAuth provider links (unused by credentials flow, ready for OAuth).                                                                                                             |
-| `sessions`            | Database sessions (unused under JWT strategy, ready for adapter use).                                                                                                           |
-| `verification_tokens` | Email verification / magic-link tokens (schema present; not yet wired).                                                                                                         |
-| `authenticators`      | WebAuthn/passkey credentials (ready for future use).                                                                                                                            |
-| `files`               | Uploaded-file registry — owner, S3 bucket key, original name, MIME type, size. See [Features → File uploads](features.md#file-uploads).                                         |
+| Table                 | Purpose                                                                                                                                                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users`               | Accounts. `hashed_password` (null for OAuth-only or unclaimed invited users), `invite_token_hash` + `invite_expires` (single-use invite claim), `avatar_file_id` (FK → `files.id`, `set null` — the current profile photo, if any), timestamps, unique email index. |
+| `roles`               | Named roles (`admin`, `member`, …) — unique name + optional description.                                                                                                                                                                                            |
+| `user_roles`          | Many-to-many join of users ↔ roles (composite PK; cascades on user/role delete).                                                                                                                                                                                    |
+| `accounts`            | OAuth provider links (unused by credentials flow, ready for OAuth).                                                                                                                                                                                                 |
+| `sessions`            | Database sessions (unused under JWT strategy, ready for adapter use).                                                                                                                                                                                               |
+| `verification_tokens` | Email verification / magic-link tokens (schema present; not yet wired).                                                                                                                                                                                             |
+| `authenticators`      | WebAuthn/passkey credentials (ready for future use).                                                                                                                                                                                                                |
+| `files`               | Uploaded-file registry — owner, S3 bucket key, original name, MIME type, size. See [Features → File uploads](features.md#file-uploads).                                                                                                                             |
 
 Roles are read from a `roles: string[]` claim on the JWT — see
 [Features → Access control](features.md#access-control-rbac). The two invite
