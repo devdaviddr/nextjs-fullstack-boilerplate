@@ -127,15 +127,6 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [ ] Dark-mode toggle & theming
 - [ ] Web Push notifications
 
-## Future enhancements
-
-Not scheduled — parked here until a specific deployment actually needs them.
-
-- **Shared-store rate limiting (Upstash)** — the in-memory limiter is correct
-  for the single-box model above; only worth swapping for a shared Redis store
-  if a fork ever runs more than one instance. Pre-designed in
-  [`specs/0017`](specs/0017-shared-store-rate-limiting.md).
-
 ## Contributing
 
 Commits run ESLint + Prettier via a Husky `pre-commit` hook. Before opening a PR:
