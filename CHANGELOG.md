@@ -8,7 +8,25 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.13.4] - 2026-07-13
+## [0.13.5] - 2026-07-13
+
+### Documentation
+
+- Documentation review pass — corrected stale content, added a consolidated
+  scripts reference, and tightened consistency:
+  - **README** gains a full **Scripts** table (dev, quality, tests, database,
+    docker, generators); refreshed the tech-stack and project-structure entries
+    for OAuth / Web Push / theming / Mailpit.
+  - **`docs/pwa.md`** — rewrote the "Push notifications" section, which still
+    described the shipped feature as unbuilt to-do work.
+  - **`docs/usage.md`** — added the missing env vars (OAuth, `APP_URL`,
+    `REQUIRE_EMAIL_VERIFICATION`, `VAPID_*`, backup settings); fixed the
+    `PROTECTED_PREFIXES` location (`proxy.ts`) and the stale "Add OAuth"
+    extending row; expanded the testing/CI sections (Mailpit, per-test IP
+    isolation, seed).
+  - Consistency: standardized every doc's back-to-README link, aligned the
+    email-provider list, fenced the deployment ASCII diagram as `text`, and
+    fixed the "gitflow" → trunk-based wording in `specs/README.md`.
 
 ### Added
 

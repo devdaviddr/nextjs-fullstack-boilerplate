@@ -18,7 +18,7 @@ Reset and verification are [spec 0011](../specs/0011-email-verification-password
 ## Setup
 
 `nodemailer` over SMTP — provider-agnostic (Resend, SendGrid, Mailgun, SES,
-Gmail, … all expose SMTP). Set these in `.env` and restart:
+Postmark, Gmail all expose SMTP credentials). Set these in `.env` and restart:
 
 ```bash
 EMAIL_ENABLED="true"
