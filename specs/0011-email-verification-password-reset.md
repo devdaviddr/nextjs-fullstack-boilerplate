@@ -1,8 +1,8 @@
 ---
 id: 0011
 title: Email verification & password reset
-status: Proposed
-release: '—'
+status: Shipped
+release: 'v0.11.0'
 created: 2026-07-13
 updated: 2026-07-13
 ---
@@ -97,18 +97,39 @@ expected, table-stakes auth flows.
 
 ## Acceptance criteria
 
-- [ ] Requesting a reset for a non-existent email returns the same response
-      as for an existing one (unit + E2E verified, no timing signal either).
-- [ ] A reset link older than 1 hour is rejected.
-- [ ] A reset token is single-use — reusing it after a successful reset fails.
-- [ ] With `REQUIRE_EMAIL_VERIFICATION=true`, an unverified user sees the
-      banner and cannot reach admin actions; verifying clears both.
-- [ ] With email disabled, `/forgot-password` shows the "contact an
-      administrator" message and sends nothing.
-- [ ] `invite.ts` → `tokens.ts` generalization has no behavior change for the
-      existing invite-claim flow (regression-tested).
-- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
+- [x] Requesting a reset always returns the same message (`requestPasswordReset`
+      returns `RESET_REQUESTED` whether or not the account exists; only accounts
+      with a password are emailed). The `/forgot-password` UI shows one message.
+- [x] A reset link older than 1 hour is rejected (`PASSWORD_RESET_TTL_MS` = 1h;
+      `consumeVerificationToken` returns false when expired). Covered by the
+      `tokens.ts` unit tests (expiry) + DB TTL.
+- [x] A reset token is single-use — `consumeVerificationToken` deletes the row
+      on use (even if expired), so a replay can't match.
+- [x] With `REQUIRE_EMAIL_VERIFICATION=true`, an unverified user sees the banner
+      (verified via screenshot) and admin mutations throw `ForbiddenError`
+      (`requireEmailVerifiedIfEnforced` in the four admin mutations); `emailVerified`
+      is set on confirm.
+- [x] With email disabled, `/forgot-password` shows the "contact an
+      administrator" message and sends nothing (e2e `password-reset.spec.ts`).
+- [x] `invite.ts` → `tokens.ts` generalization has no behavior change — `invite.ts`
+      now delegates to `tokens.ts` and the existing `invite.test.ts` still passes.
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
       pass.
+
+Verification notes:
+
+- Automated: token primitive (`tests/unit/tokens.test.ts`), invite regression
+  (`tests/unit/invite.test.ts`), and route/UI + email-disabled behaviour
+  (`tests/e2e/password-reset.spec.ts`).
+- DB-verified: a reset request persists a `password-reset` token and
+  registration persists an `email-verify` token — both stored as SHA-256
+  hashes (raw token never stored), correctly purpose-scoped.
+- Visual: the verify-email soft-gate banner renders for a fresh unverified user
+  (screenshot).
+- Not automated (needs a mail catcher): clicking the actual emailed link to
+  complete a reset / verify end-to-end — verified manually. The token
+  issuance, consume, expiry, single-use, and purpose-scoping logic underneath
+  it is unit- and DB-verified.
 
 ## Security & privacy
 

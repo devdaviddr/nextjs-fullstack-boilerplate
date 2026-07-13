@@ -124,7 +124,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] Dark-mode toggle & theming
 - [x] SEO & OpenGraph metadata — shareable link-preview cards
 - [x] OAuth providers (GitHub, Google)
-- [ ] Email verification & password reset
+- [x] Email verification & password reset
 - [ ] Web Push notifications
 - [ ] Automated backups — nightly Postgres + MinIO, documented restore path
 

@@ -2,7 +2,12 @@ import { redirect } from 'next/navigation'
 import { SessionProvider } from 'next-auth/react'
 
 import { AppShell } from '@/components/shell/app-shell'
+import { VerificationBanner } from '@/components/auth/verification-banner'
 import { getCurrentSession } from '@/lib/auth/session'
+import {
+  isCurrentUserVerified,
+  isEmailVerificationEnforced,
+} from '@/lib/auth/verification-guard'
 
 // Wraps all protected pages in the app shell. Also enforces auth at the layout
 // level (defense in depth on top of the edge proxy). The SessionProvider is
@@ -18,6 +23,10 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  // Soft gate: show the verify-email banner when enforced and unverified.
+  const showVerificationBanner =
+    isEmailVerificationEnforced() && !(await isCurrentUserVerified())
+
   return (
     <SessionProvider session={session}>
       <AppShell
@@ -27,6 +36,7 @@ export default async function DashboardLayout({
           image: session.user.image,
         }}
       >
+        {showVerificationBanner && <VerificationBanner />}
         {children}
       </AppShell>
     </SessionProvider>

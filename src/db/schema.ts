@@ -101,8 +101,12 @@ export const verificationTokens = pgTable(
   'verification_tokens',
   {
     identifier: text('identifier').notNull(),
+    // We store the SHA-256 hash of the emailed token here, never the raw value.
     token: text('token').notNull(),
     expires: timestamp('expires', { mode: 'date' }).notNull(),
+    // Scopes a token to one flow so it can't be replayed cross-purpose. Null
+    // for rows created by the Auth.js adapter (e.g. its own email flows).
+    purpose: text('purpose').$type<'password-reset' | 'email-verify'>(),
   },
   (table) => [primaryKey({ columns: [table.identifier, table.token] })],
 )

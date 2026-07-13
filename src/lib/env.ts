@@ -29,6 +29,14 @@ const envSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
 
+    // When true, newly-registered users must verify their email before admin
+    // actions are allowed (a soft gate, not a full lockout). Off by default.
+    // Only meaningful when email is enabled.
+    REQUIRE_EMAIL_VERIFICATION: z
+      .string()
+      .optional()
+      .transform((v) => v === 'true'),
+
     // --- OAuth providers (opt-in) ------------------------------------------
     // Each provider is enabled only when BOTH its id and secret are set (see
     // isGithubConfigured/isGoogleConfigured). Absent → the provider button is

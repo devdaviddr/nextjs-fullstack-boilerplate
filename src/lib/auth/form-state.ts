@@ -3,7 +3,7 @@
  * a `'use server'` file may only export async functions — not values/types.
  */
 export type AuthFormState = {
-  status: 'idle' | 'error'
+  status: 'idle' | 'error' | 'success'
   message?: string
   fieldErrors?: Record<string, string[]>
 }

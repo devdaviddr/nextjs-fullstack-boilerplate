@@ -39,6 +39,28 @@ export const registerSchema = z
     path: ['confirmPassword'],
   })
 
+/** Strong password with the same rules as registration. */
+const strongPassword = password
+  .regex(/[a-z]/, 'Include at least one lowercase letter')
+  .regex(/[A-Z]/, 'Include at least one uppercase letter')
+  .regex(/[0-9]/, 'Include at least one number')
+
+/** Request a password-reset link. */
+export const forgotPasswordSchema = z.object({ email })
+
+/** Complete a password reset with the emailed token. */
+export const resetPasswordSchema = z
+  .object({
+    email,
+    token: z.string().min(1, 'Reset token is required'),
+    password: strongPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
 /** Admin: create a new user (no password — user sets it on first login) */
 export const createUserSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(255),
@@ -61,6 +83,8 @@ export const assignRolesSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type CreateUserInput = z.infer<typeof createUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type AssignRolesInput = z.infer<typeof assignRolesSchema>
