@@ -86,6 +86,11 @@ Key properties:
   a fast JWT check; server actions and the admin panel re-assert with
   `requireRole` against `getCurrentSession()` (DB-backed if the token is stale),
   so the client helpers are cosmetic and can't grant access.
+- **File uploads** — size, MIME-type, and per-user quota are all validated
+  server-side before anything is written to storage. MinIO has no public
+  ingress; the app is the only path to it (`src/app/api/files/[id]/route.ts`
+  checks ownership on every download — a non-owner gets the same 404 whether
+  the file exists or not).
 - **Invite claim** — admin-created accounts are passwordless and claimable only
   with a single-use token whose SHA-256 hash (not the token) is stored, is
   time-safe compared, expires in 7 days, and is cleared on use. A wrong/expired
@@ -120,6 +125,7 @@ src/
 │   ├── 403/                     # forbidden page (role-gated redirects land here)
 │   ├── api/
 │   │   ├── auth/[...nextauth]/  # Auth.js endpoints
+│   │   ├── files/[id]/         # ownership-checked file download (streams from MinIO)
 │   │   └── health/             # DB-backed liveness probe
 │   ├── manifest.ts             # PWA manifest → /manifest.webmanifest
 │   ├── offline/                # SW offline fallback
@@ -128,6 +134,7 @@ src/
 │   └── layout.tsx · page.tsx · globals.css
 ├── components/
 │   ├── auth/                    # forms, submit button, sign-out
+│   ├── files/                   # "My Files" panel (upload/list/download/delete)
 │   ├── pwa/                     # service-worker register, install prompt
 │   ├── shell/                   # app-shell, sidebar-nav
 │   └── ui/                      # shadcn/ui primitives
@@ -137,6 +144,7 @@ src/
 │   ├── auth/                    # config · index · password · actions · admin-actions
 │   │                           #   · session · form-state · rbac · client-rbac · invite
 │   ├── email/                   # index (gate + sendEmail) · transport (SMTP) · templates
+│   ├── storage/                 # client (S3/MinIO) · validation · actions (upload/list/delete)
 │   ├── shell/nav.ts            # sidebar navigation config
 │   ├── validations/            # Zod schemas
 │   ├── env.ts · utils.ts

@@ -1,8 +1,8 @@
 ---
 id: 0007
 title: File uploads & object storage (MinIO)
-status: Proposed
-release: '—'
+status: Shipped
+release: v0.6.0
 created: 2026-07-13
 updated: 2026-07-13
 ---
@@ -110,23 +110,38 @@ to eliminate.
   `MAX_STORAGE_PER_USER_MB` default `500`,
   `UPLOAD_ALLOWED_MIME_TYPES` default a safe image/PDF allow-list) and
   `.env.example`.
+- **Error handling** — `uploadFile`/`deleteFile` return `{ ok: true, data }`
+  or `{ ok: false, error }` rather than throwing for expected/validation
+  failures. Next.js redacts a thrown Error's `message` in production builds
+  (a generic "an error occurred" reaches the client instead), which would
+  have silently broken every user-facing validation message. This mirrors
+  the `AuthFormState` return-value pattern `src/lib/auth/actions.ts` already
+  uses for login/register — only genuinely unexpected failures (DB/S3 down)
+  still throw, which is the correct case to redact.
 
 ## Acceptance criteria
 
-- [ ] `docker compose up` brings up `minio` healthy and `minio-init` creates
-      the bucket exactly once (idempotent on restart).
-- [ ] Uploading a file over `UPLOAD_MAX_SIZE_MB` is rejected before any bytes
-      reach MinIO.
-- [ ] Uploading a disallowed MIME type is rejected.
-- [ ] A user who has hit `MAX_STORAGE_PER_USER_MB` cannot upload further files
-      until they delete something.
-- [ ] `GET /api/files/[id]` for a file owned by another user returns 403/404,
-      not the file.
-- [ ] Deleting a user cascades to their `files` rows and the underlying
-      objects.
-- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass; unit tests
-      cover the validation/quota logic, E2E covers one full upload → list →
-      download → delete round trip.
+- [x] `docker compose up` brings up `minio` healthy and `minio-init` creates
+      the bucket exactly once (idempotent on restart) — verified against both
+      `docker-compose.yml` and `docker-compose.prod.yml`.
+- [x] Uploading a file over `UPLOAD_MAX_SIZE_MB` is rejected before any bytes
+      reach MinIO — unit-tested (`validateUpload` runs before `putObject`).
+- [x] Uploading a disallowed MIME type is rejected — E2E-verified.
+- [x] A user who has hit `MAX_STORAGE_PER_USER_MB` cannot upload further files
+      until they delete something — unit-tested.
+- [x] `GET /api/files/[id]` for a file owned by another user returns 404, not
+      the file — E2E-verified for both an anonymous request and a different
+      signed-in user (the ownership check, not just an auth check).
+- [x] Deleting a user cascades to their `files` rows and the underlying
+      objects — E2E-verified end to end (admin deletes a user with an
+      uploaded file; the file's download link 404s afterward).
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass; unit tests
+      cover the validation/quota logic, E2E covers upload → list → download →
+      delete, a rejected upload, cross-user access denial, and cascade delete.
+- [x] Verified against the actual production Docker build, not just `next
+dev` — this caught a real bug (Next.js redacts thrown Server Action
+      error messages in production; fixed by returning `{ ok, error }`
+      results instead of throwing for expected/validation failures).
 
 ## Security & privacy
 

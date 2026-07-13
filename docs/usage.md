@@ -6,33 +6,42 @@
 
 - Node.js ≥ 20.9 (22 recommended)
 - [pnpm](https://pnpm.io) — `corepack enable`
-- Docker (for local Postgres)
+- Docker (for local Postgres + MinIO)
 
 ## Environment variables
 
 Copy `.env.example` → `.env`. All variables are validated at boot in `src/lib/env.ts` — a missing or malformed value fails fast with a readable error.
 
-| Variable              | Required | Notes                                                   |
-| --------------------- | :------: | ------------------------------------------------------- |
-| `DATABASE_URL`        |    ✅    | Postgres connection string                              |
-| `AUTH_SECRET`         |    ✅    | `npx auth secret` — unique per environment, never reuse |
-| `AUTH_URL`            |    –     | Canonical URL; set in production                        |
-| `AUTH_TRUST_HOST`     |    –     | `true` behind a trusted proxy / in Docker               |
-| `NODE_ENV`            |    –     | `development` \| `test` \| `production`                 |
-| `LOG_LEVEL`           |    –     | `debug` \| `info` \| `warn` \| `error`                  |
-| `RATE_LIMIT_DISABLED` |    –     | `true` to disable the in-memory auth rate limiter       |
-| `EMAIL_ENABLED`       |    –     | `true` to turn on email; requires the SMTP vars below   |
-| `EMAIL_FROM`          |    †     | From address (required when `EMAIL_ENABLED=true`)       |
-| `SMTP_HOST`           |    †     | SMTP host (required when `EMAIL_ENABLED=true`)          |
-| `SMTP_PORT`           |    †     | SMTP port, e.g. `587` or `465` (required when enabled)  |
-| `SMTP_USER`           |    –     | SMTP username (if the server requires auth)             |
-| `SMTP_PASSWORD`       |    –     | SMTP password (if the server requires auth)             |
-| `SMTP_SECURE`         |    –     | `true` for implicit TLS; auto-true on port `465`        |
+| Variable                    | Required | Notes                                                       |
+| --------------------------- | :------: | ----------------------------------------------------------- |
+| `DATABASE_URL`              |    ✅    | Postgres connection string                                  |
+| `S3_ENDPOINT`               |    ✅    | S3-compatible endpoint (MinIO by default)                   |
+| `S3_ACCESS_KEY_ID`          |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev |
+| `S3_SECRET_ACCESS_KEY`      |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev |
+| `S3_BUCKET`                 |    ✅    | Bucket name — auto-created by `minio-init`                  |
+| `S3_REGION`                 |    –     | Defaults to `us-east-1` (MinIO ignores region)              |
+| `UPLOAD_MAX_SIZE_MB`        |    –     | Per-file size cap. Default `10`                             |
+| `MAX_STORAGE_PER_USER_MB`   |    –     | Per-user quota. Default `500`                               |
+| `UPLOAD_ALLOWED_MIME_TYPES` |    –     | Comma-separated allow-list. Default images + PDF            |
+| `AUTH_SECRET`               |    ✅    | `npx auth secret` — unique per environment, never reuse     |
+| `AUTH_URL`                  |    –     | Canonical URL; set in production                            |
+| `AUTH_TRUST_HOST`           |    –     | `true` behind a trusted proxy / in Docker                   |
+| `NODE_ENV`                  |    –     | `development` \| `test` \| `production`                     |
+| `LOG_LEVEL`                 |    –     | `debug` \| `info` \| `warn` \| `error`                      |
+| `RATE_LIMIT_DISABLED`       |    –     | `true` to disable the in-memory auth rate limiter           |
+| `EMAIL_ENABLED`             |    –     | `true` to turn on email; requires the SMTP vars below       |
+| `EMAIL_FROM`                |    †     | From address (required when `EMAIL_ENABLED=true`)           |
+| `SMTP_HOST`                 |    †     | SMTP host (required when `EMAIL_ENABLED=true`)              |
+| `SMTP_PORT`                 |    †     | SMTP port, e.g. `587` or `465` (required when enabled)      |
+| `SMTP_USER`                 |    –     | SMTP username (if the server requires auth)                 |
+| `SMTP_PASSWORD`             |    –     | SMTP password (if the server requires auth)                 |
+| `SMTP_SECURE`               |    –     | `true` for implicit TLS; auto-true on port `465`            |
 
 † Required only when `EMAIL_ENABLED=true`. Setting the toggle without a provider
 fails fast at boot. SMTP is provider-agnostic — Resend, SendGrid, Mailgun, SES,
 Postmark and Gmail all expose SMTP credentials. See
-[Features → Email](features.md#email-optional).
+[Features → Email](features.md#email-optional). S3 vars are always required —
+see [Features → File uploads](features.md#file-uploads).
 
 ## Scripts
 
@@ -48,6 +57,7 @@ Postmark and Gmail all expose SMTP credentials. See
 | `pnpm db:generate` · `db:migrate` · `db:push` · `db:studio` · `db:seed` | Database (see [Database](database.md)) |
 | `pnpm gen:icons`                                                        | Regenerate PWA icons                   |
 | `pnpm docker:db`                                                        | Start the local Postgres container     |
+| `pnpm docker:minio`                                                     | Start local MinIO + bucket init        |
 
 ## Testing
 
@@ -57,31 +67,32 @@ pnpm test:coverage   # units with coverage
 pnpm test:e2e        # E2E (needs a migrated DB + running/built app)
 ```
 
-- **Unit** tests live in `tests/unit/` (password hashing, validation schemas). The `server-only` guard is stubbed for the test runner (see `vitest.config.ts`).
-- **E2E** tests live in `tests/e2e/` (auth flow, protected-route redirects, PWA manifest/SW/offline). Playwright boots `pnpm dev` locally and `pnpm start` in CI.
+- **Unit** tests live in `tests/unit/` (password hashing, validation schemas, upload validation). The `server-only` guard is stubbed for the test runner (see `vitest.config.ts`).
+- **E2E** tests live in `tests/e2e/` (auth flow, protected-route redirects, PWA manifest/SW/offline, file upload/download/delete, a11y). Playwright boots `pnpm dev` locally and `pnpm start` in CI.
 
-Full green run against a live database:
+Full green run against a live database + object store:
 
 ```bash
-pnpm docker:db && pnpm db:migrate && pnpm build && pnpm test:e2e
+pnpm docker:db && pnpm docker:minio && pnpm db:migrate && pnpm build && pnpm test:e2e
 ```
 
 ## Docker
 
-**Local database only:**
+**Local dependencies only:**
 
 ```bash
 pnpm docker:db          # docker compose up -d db
+pnpm docker:minio       # docker compose up -d minio minio-init
 ```
 
-**Full production-like stack (app + db + one-shot migrator):**
+**Full production-like stack (app + db + MinIO + one-shot migrator/bucket-init):**
 
 ```bash
 AUTH_SECRET=$(openssl rand -base64 33) \
   docker compose -f docker-compose.prod.yml up --build
 ```
 
-The app image is a multi-stage build using Next.js `standalone` output, runs as a non-root user, and exposes `/api/health` as a container healthcheck. The `migrate` service applies migrations before the app starts.
+The app image is a multi-stage build using Next.js `standalone` output, runs as a non-root user, and exposes `/api/health` as a container healthcheck. The `migrate` and `minio-init` services run once before the app starts. MinIO has no published ports in this stack — the app is the only public gateway to it.
 
 ## Git hooks
 
@@ -97,22 +108,27 @@ Husky installs a `pre-commit` hook that runs **lint-staged** (ESLint + Prettier 
 
 ## Extending
 
-| Task                   | How                                                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Add a protected route  | Create a page under `src/app/(dashboard)/`, add its prefix to `PROTECTED_PREFIXES` in `src/lib/auth/config.ts` |
-| Add a sidebar link     | Add `{ title, href, icon }` to `src/lib/shell/nav.ts`                                                          |
-| Add a table            | Edit `src/db/schema.ts`, then `pnpm db:generate && pnpm db:migrate`                                            |
-| Add a shadcn component | `pnpm dlx shadcn@latest add <name>`                                                                            |
-| Add OAuth              | Enable `DrizzleAdapter(db)` and add providers in `src/lib/auth/index.ts` (schema is adapter-ready)             |
-| Gate a route by role   | Add a prefix → roles entry to `ROLE_REQUIRED` in `src/proxy.ts`; assert `requireRole('admin')` in the action   |
-| Add a role             | Insert into the `roles` table (see `src/db/seed.ts`); assign via the Settings admin panel or `assignRoles`     |
-| Enable email           | Set `EMAIL_ENABLED=true` + the `SMTP_*` vars in `.env`; templates live in `src/lib/email/templates.ts`         |
-| Add an env var         | Add it to the schema in `src/lib/env.ts` and to `.env.example`                                                 |
+| Task                        | How                                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Add a protected route       | Create a page under `src/app/(dashboard)/`, add its prefix to `PROTECTED_PREFIXES` in `src/lib/auth/config.ts`                 |
+| Add a sidebar link          | Add `{ title, href, icon }` to `src/lib/shell/nav.ts`                                                                          |
+| Add a table                 | Edit `src/db/schema.ts`, then `pnpm db:generate && pnpm db:migrate`                                                            |
+| Add a shadcn component      | `pnpm dlx shadcn@latest add <name>`                                                                                            |
+| Add OAuth                   | Enable `DrizzleAdapter(db)` and add providers in `src/lib/auth/index.ts` (schema is adapter-ready)                             |
+| Gate a route by role        | Add a prefix → roles entry to `ROLE_REQUIRED` in `src/proxy.ts`; assert `requireRole('admin')` in the action                   |
+| Add a role                  | Insert into the `roles` table (see `src/db/seed.ts`); assign via the Settings admin panel or `assignRoles`                     |
+| Enable email                | Set `EMAIL_ENABLED=true` + the `SMTP_*` vars in `.env`; templates live in `src/lib/email/templates.ts`                         |
+| Change upload limits        | Adjust `UPLOAD_MAX_SIZE_MB` / `MAX_STORAGE_PER_USER_MB` / `UPLOAD_ALLOWED_MIME_TYPES` in `.env`                                |
+| Point storage at real S3/R2 | Set `S3_ENDPOINT`/`S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY`/`S3_BUCKET` — `src/lib/storage/client.ts` is unmodified either way |
+| Add an env var              | Add it to the schema in `src/lib/env.ts` and to `.env.example`                                                                 |
 
 ## Production checklist
 
 - [ ] Unique, strong `AUTH_SECRET` per environment.
 - [ ] `DATABASE_URL` on managed Postgres with TLS (`sslmode=require`).
+- [ ] Change the default `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from
+      `minioadmin`/`minioadmin` (fine for a MinIO instance with no public
+      ingress, but don't leave the default if you ever expose it directly).
 - [ ] Run `pnpm db:migrate` as a deploy step.
 - [ ] Terminate TLS at a trusted proxy; set `AUTH_TRUST_HOST=true`.
 - [ ] Swap the in-memory rate limiter for a shared store (e.g. Upstash) if you

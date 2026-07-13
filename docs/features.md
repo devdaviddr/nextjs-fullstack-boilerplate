@@ -48,6 +48,26 @@ See [Usage → Environment variables](usage.md#environment-variables) to configu
 
 See [Database](database.md).
 
+## File uploads
+
+- **Self-hosted, S3-compatible object storage** via **MinIO** — no cloud
+  account required; works unmodified against R2/S3 if you ever want to swap.
+- **Server-proxied, not presigned-direct** — uploads/downloads flow through
+  the app (`src/lib/storage/`), so MinIO itself is never publicly exposed and
+  needs no second Cloudflare Tunnel hostname.
+- **Validated before anything is stored** — size (`UPLOAD_MAX_SIZE_MB`), MIME
+  type (`UPLOAD_ALLOWED_MIME_TYPES` allow-list), and a per-user storage quota
+  (`MAX_STORAGE_PER_USER_MB`) are all enforced server-side.
+- **Ownership-checked downloads** — `GET /api/files/[id]` streams an object
+  back only to its owner; a non-owner gets the same 404 whether the file
+  exists or not (no existence signal).
+- **Rate-limited uploads** and a **"My Files" panel** in Settings (list,
+  download, delete) — available to every signed-in user, not admin-gated.
+- Deleting a user removes their files' objects and rows too — no orphaned
+  storage.
+
+See [spec 0007](../specs/0007-file-uploads.md).
+
 ## Progressive Web App
 
 - Installable web app manifest, generated icon set (incl. maskable), theme color, iOS home-screen metadata.

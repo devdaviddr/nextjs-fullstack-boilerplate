@@ -25,6 +25,7 @@ An opinionated, batteries-included template built on **Next.js 16** (App Router,
 - 🧑‍⚖️ **Role-based access control** — roles on the JWT, edge + server guards, admin user-management, invite-based account claim
 - ✉️ **Optional email** — toggleable, provider-agnostic SMTP delivery (off by default), wired to invite links
 - 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema, committed migrations
+- 📁 **File uploads** — self-hosted, S3-compatible object storage (MinIO), size/type validation, per-user quota
 - 📱 **PWA + responsive app shell** — installable, offline-resilient, mobile-to-desktop layout
 - 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
 - 🐳 **Docker + CI** — multi-stage image, GitHub Actions pipeline
@@ -44,8 +45,9 @@ pnpm install
 cp .env.example .env
 npx auth secret            # generates AUTH_SECRET — paste into .env
 
-# 3. Start Postgres, apply schema, seed a demo user
+# 3. Start Postgres + MinIO, apply schema, seed a demo user
 pnpm docker:db
+pnpm docker:minio
 pnpm db:migrate
 pnpm db:seed                # → demo@example.com / Password123
 
@@ -76,6 +78,7 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | Auth       | Auth.js (NextAuth) v5 — Credentials + JWT, Argon2id, RBAC   |
 | Email      | Optional SMTP via nodemailer — off by default, any provider |
 | Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                   |
+| Storage    | MinIO (S3-compatible) · @aws-sdk/client-s3                  |
 | UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                  |
 | Validation | Zod (shared client/server schemas)                          |
 | Testing    | Vitest + Testing Library · Playwright                       |
@@ -86,10 +89,10 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 
 ```
 src/
-├── app/            # App Router: (auth) + (dashboard) groups, api/, PWA manifest & offline
-├── components/     # auth · pwa · shell · ui (shadcn)
+├── app/            # App Router: (auth) + (dashboard) groups, api/ (incl. files/[id]), PWA manifest & offline
+├── components/     # auth · files · pwa · shell · ui (shadcn)
 ├── db/             # Drizzle schema, client, migrate & seed scripts
-├── lib/            # auth (config/actions/session/rbac/invite), email, validations, env, shell nav
+├── lib/            # auth (config/actions/session/rbac/invite), email, storage (S3/MinIO), validations, env, shell nav
 └── proxy.ts        # edge route protection + role gating (Next 16 "proxy" convention)
 ```
 
@@ -117,7 +120,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] Auth rate limiting · nonce CSP + HSTS · structured-logging shim
 - [x] RBAC · invite-based account claim · optional email delivery
 - [x] Cloudflare Tunnel deployment
-- [ ] File uploads & object storage — self-hosted MinIO, per-user quota
+- [x] File uploads & object storage — self-hosted MinIO, per-user quota
 - [ ] Automated backups — nightly Postgres + MinIO, documented restore path
 - [ ] OAuth providers (GitHub, Google)
 - [ ] Email verification & password reset

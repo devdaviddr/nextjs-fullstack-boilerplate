@@ -8,6 +8,30 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-13
+
+### Added
+
+- File uploads & object storage ([spec 0007](specs/0007-file-uploads.md)):
+  self-hosted, S3-compatible **MinIO** as a docker-compose service (no public
+  ingress — the app is the only gateway to it), a `files` table, and
+  `src/lib/storage/` (upload/list/delete Server Actions, an
+  ownership-checked `GET /api/files/[id]` download route). Uploads are
+  validated server-side against a size cap, a MIME-type allow-list, and a
+  per-user storage quota, and are rate-limited. A "My Files" panel in
+  Settings is available to every signed-in user. Deleting a user now also
+  deletes their stored files and objects.
+- `pnpm docker:minio` — brings up MinIO plus a one-shot bucket-init service,
+  alongside the existing `pnpm docker:db`.
+
+### Fixed
+
+- Server Actions now return `{ ok, error }` results instead of throwing for
+  expected/validation failures (`src/lib/storage/actions.ts`) — Next.js
+  redacts thrown error messages in production builds, which silently broke
+  user-facing validation messages. Caught by testing against the actual
+  production Docker image, not just `next dev`.
+
 ## [0.5.2] - 2026-07-13
 
 ### Added
@@ -158,7 +182,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.1...v0.5.0
