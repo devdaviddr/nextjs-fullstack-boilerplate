@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // The email round-trip (send link → click → reset) needs a mail catcher and is
 // verified manually (see spec 0011). These cover the routes and the

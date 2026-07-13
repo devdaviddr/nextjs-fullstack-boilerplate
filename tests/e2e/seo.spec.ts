@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // Verifies the share-link / SEO surface: robots, sitemap, and the OpenGraph /
 // Twitter meta tags with absolute image URLs (the whole point — a shared link

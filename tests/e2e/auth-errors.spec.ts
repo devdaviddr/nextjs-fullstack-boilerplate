@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // These exercise the error branches of the auth server actions through the UI.
 // They rely on the seeded demo user (demo@example.com).

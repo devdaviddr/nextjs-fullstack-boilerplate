@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // Automated accessibility regression checks (WCAG 2.0/2.1 A + AA) for the
 // pages most likely to be touched by real visitors and admins. This backs the
