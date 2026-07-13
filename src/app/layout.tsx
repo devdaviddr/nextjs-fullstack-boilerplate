@@ -4,18 +4,39 @@ import { headers } from 'next/headers'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import { ThemeProvider } from '@/components/theme/theme-provider'
+import { env } from '@/lib/env'
 import './globals.css'
 
 const APP_NAME = 'Next.js Full-Stack Boilerplate'
+const APP_DESCRIPTION =
+  'Production-grade Next.js boilerplate with Auth.js, Drizzle, and Postgres.'
 
 export const metadata: Metadata = {
+  // Absolute base for OpenGraph/Twitter image URLs and canonical links.
+  metadataBase: new URL(env.APP_URL),
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
     template: '%s · Boilerplate',
   },
-  description:
-    'Production-grade Next.js boilerplate with Auth.js, Drizzle, and Postgres.',
+  description: APP_DESCRIPTION,
+  // Social share cards. The default image (public/og.png) is a committed
+  // asset; swap it per fork with no code change. Relative URLs resolve
+  // against `metadataBase`.
+  openGraph: {
+    type: 'website',
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    url: '/',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: APP_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    images: ['/og.png'],
+  },
   // iOS home-screen / standalone behaviour.
   appleWebApp: {
     capable: true,

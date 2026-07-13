@@ -1,0 +1,46 @@
+// Generates the default social share (OpenGraph / Twitter) image.
+// Re-run after dropping in real branding:  pnpm gen:og
+// Output is a committed asset (public/og.png) — like the icons, it is not
+// regenerated in CI, so relying on local system fonts for the text is fine.
+// To rebrand a fork without touching code, just replace public/og.png with a
+// 1200x630 image of the same name.
+import { mkdir } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
+
+const W = 1200
+const H = 630
+const THEME = '#0f172a' // slate-900 (matches the app's dark background)
+const FG = '#ffffff'
+const MUTED = '#94a3b8' // slate-400
+const ACCENT = '#38bdf8' // sky-400
+const root = fileURLToPath(new URL('..', import.meta.url))
+
+const TITLE = 'Next.js Full-Stack Boilerplate'
+const SUBTITLE = 'Auth.js · Drizzle · Postgres · PWA · Docker'
+
+// The same 2x2 "app grid" mark used by the icons, scaled up.
+const mark = `
+<g transform="translate(96, 96) scale(1.6)" fill="${FG}">
+  <rect x="0" y="0" width="40" height="40" rx="9"/>
+  <rect x="56" y="0" width="40" height="40" rx="9"/>
+  <rect x="0" y="56" width="40" height="40" rx="9"/>
+  <rect x="56" y="56" width="40" height="40" rx="9"/>
+</g>`
+
+const svg = Buffer.from(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="${THEME}"/>
+  <rect x="0" y="${H - 12}" width="${W}" height="12" fill="${ACCENT}"/>
+  ${mark}
+  <text x="96" y="380" fill="${FG}" font-family="Helvetica, Arial, sans-serif" font-size="76" font-weight="700">${TITLE}</text>
+  <text x="96" y="452" fill="${MUTED}" font-family="Helvetica, Arial, sans-serif" font-size="36" font-weight="400">${SUBTITLE}</text>
+</svg>`,
+)
+
+const out = join(root, 'public/og.png')
+await mkdir(dirname(out), { recursive: true })
+await sharp(svg).png().toFile(out)
+console.log('✓ public/og.png (1200x630)')
+console.log('Swap public/og.png (or edit this script) to rebrand a fork.')
