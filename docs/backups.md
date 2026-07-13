@@ -1,6 +1,6 @@
 # Backups & restore
 
-[← Back to project README](../README.md)
+[← Back to README](../README.md)
 
 The production stack ([`docker-compose.prod.yml`](../docker-compose.prod.yml))
 backs up both stores automatically:

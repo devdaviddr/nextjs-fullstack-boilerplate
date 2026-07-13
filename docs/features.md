@@ -12,7 +12,8 @@ A complete inventory of what ships in this boilerplate.
 - **Edge-protected routes** — a lightweight `proxy.ts` guards protected paths on the edge runtime; pages re-check server-side (defense in depth).
 - **User-enumeration resistance** — failed logins run a dummy hash verify so response timing doesn't reveal whether an account exists.
 - **Resilient sessions** — an undecryptable cookie (e.g. after an `AUTH_SECRET` rotation) is treated as "signed out" instead of crashing the request.
-- **OAuth-ready schema** — `users / accounts / sessions / verificationTokens` tables match the Auth.js Drizzle adapter, so social login is a small addition.
+- **OAuth — GitHub & Google** (opt-in) via the Auth.js Drizzle adapter, on the same `users` table and JWT sessions as Credentials. No dangerous email auto-linking; a "Connected accounts" panel links/unlinks providers with a self-lockout guard. See [OAuth](oauth.md).
+- **Password reset & email verification** (opt-in with email) — single-use, purpose-scoped, hashed tokens; anti-enumeration; an optional verify soft gate. See [Email](email.md).
 
 See [Architecture → Authentication](architecture.md#authentication-design) for the design.
 
@@ -36,9 +37,17 @@ See [Architecture → Authentication](architecture.md#authentication-design) for
 - **Off by default** — everything email-related is inert unless `EMAIL_ENABLED=true` **and** an SMTP provider is configured; enabling it without a provider **fails fast at boot**.
 - **Provider-agnostic SMTP** (`src/lib/email/`) — works with Resend, SendGrid, Mailgun, SES, Postmark, or Gmail via their SMTP credentials; `nodemailer` is loaded lazily (never bundled when off, never at the edge).
 - **Safe no-op** — `sendEmail()` returns `{ skipped }` when disabled and never throws on send failure, so a flaky mail server can't break the surrounding action.
-- **Wired to invites** — invite links are emailed when enabled and always shown in the admin UI as a fallback.
+- **Wired to invites, password reset, and email verification** — invite links are emailed when enabled (and shown in the admin UI as a fallback); reset and verification links go out the same path.
 
-See [Usage → Environment variables](usage.md#environment-variables) to configure it.
+See [Email](email.md) to configure it and for the reset/verification flows.
+
+## Web Push notifications (optional)
+
+- **Opt-in** — inert (including the Settings toggle) unless `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` are set. Generate keys with `npx web-push generate-vapid-keys`.
+- **Per-device subscriptions** (`push_subscriptions`) — enable/disable from Settings; the private key never reaches the client.
+- **Server send helpers** (`src/lib/push/`) — `sendPushNotification(userId, …)` / `notifyRole('admin', …)`, best-effort (a send failure never blocks the triggering action) and auto-pruning subscriptions the push service reports as Gone (404/410).
+- **Worked example** — admins are notified when a new user self-registers.
+- **Service worker** shows the notification on `push` and focuses/opens the right tab on `notificationclick`. Active in production builds. See [spec 0015](../specs/0015-web-push-notifications.md).
 
 ## Database
 
@@ -86,10 +95,16 @@ See [PWA & App Shell](pwa.md).
 ## UI & responsive shell
 
 - **Tailwind CSS v4** + **shadcn/ui** components.
-- Minimal, borderless **app shell**: fixed sidebar on desktop, off-canvas drawer on mobile, sticky topbar.
+- **Light / dark / system theming** (`next-themes`) — a toggle in the app shell and on auth pages; no flash of wrong theme (the anti-flash script runs under the strict CSP via the per-request nonce, no `script-src` loosening). See [spec 0013](../specs/0013-dark-mode-theming.md).
+- Minimal, borderless **app shell**: brand lockup (app icon + wordmark), fixed sidebar on desktop, off-canvas drawer on mobile, sticky topbar.
 - Safe-area insets for installed PWA (notch-aware).
 - Data-driven navigation with active-state highlighting.
 - Auth pages (login/register) with accessible forms and inline validation.
+
+## SEO & social sharing
+
+- **OpenGraph + Twitter card metadata** and a default share image (`public/og.png`, regenerate with `pnpm gen:og`) so shared links unfurl with a preview card.
+- **`metadataBase`** (from `APP_URL`) resolves relative image URLs absolutely; **`robots.txt`** and **`sitemap.xml`** via Next's file conventions. See [spec 0019](../specs/0019-seo-opengraph-metadata.md).
 
 ## Developer experience
 
@@ -108,7 +123,8 @@ See [PWA & App Shell](pwa.md).
 ## Delivery
 
 - **Multi-stage Dockerfile** — Next.js `standalone` output, non-root user, healthcheck.
-- **docker-compose** for local Postgres and a full production-like stack (app + db + one-shot migrator).
+- **docker-compose** for local Postgres and a full production-like stack (app + db + one-shot migrator + MinIO).
+- **Automated backups** — nightly Postgres dumps + MinIO mirror with retention, a `backup-verify.sh` doctor, and a tested restore runbook. See [Backups](backups.md).
 - **GitHub Actions** CI: lint · typecheck · unit · E2E (with Postgres service) · Docker build.
 
-See [Usage & Development](usage.md).
+See [Usage & Development](usage.md) and [Deployment](deployment.md).
