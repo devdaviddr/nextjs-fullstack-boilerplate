@@ -18,7 +18,8 @@ pnpm dev
 1. For a non-trivial feature, write a spec first — copy
    [`specs/TEMPLATE.md`](specs/TEMPLATE.md) and open it as `Proposed`
    (see [`specs/README.md`](specs/README.md)).
-2. Branch off `develop` (gitflow): `feature/<slug>`.
+2. Branch off `main`: `feature/<slug>`. There is no `develop` branch — `main`
+   is the only long-lived branch.
 3. Make your change with tests where it makes sense.
 4. Run the full gate locally before pushing:
 
@@ -26,9 +27,9 @@ pnpm dev
    pnpm lint && pnpm typecheck && pnpm test && pnpm build
    ```
 
-5. Open a pull request into `develop`. CI (lint · typecheck · unit · E2E ·
-   Docker) must pass. On release, set the spec to `Shipped` and update
-   `CHANGELOG.md`.
+5. Open a pull request into `main`. CI (lint · typecheck · unit · E2E ·
+   Docker) must pass. On merge, bump the version, set the spec to `Shipped`,
+   update `CHANGELOG.md`, and tag the release (`vX.Y.Z`).
 
 ## Commit messages
 

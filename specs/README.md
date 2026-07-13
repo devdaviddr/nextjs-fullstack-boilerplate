@@ -43,14 +43,28 @@ other — one isn't a substitute for the other.
 
 ## Index
 
-| Spec                                         | Title                            | Status  | Release |
-| -------------------------------------------- | -------------------------------- | ------- | ------- |
-| [0001](0001-project-foundation.md)           | Project foundation               | Shipped | v0.1.0  |
-| [0002](0002-pwa-and-app-shell.md)            | PWA & responsive app shell       | Shipped | v0.2.0  |
-| [0003](0003-security-hardening.md)           | Production security hardening    | Shipped | v0.3.0  |
-| [0004](0004-graphify-claude-integration.md)  | graphify & CLAUDE.md integration | Shipped | v0.3.1  |
-| [0005](0005-cloudflare-tunnel-deployment.md) | Cloudflare Tunnel deployment     | Shipped | v0.4.0  |
-| [0006](0006-rbac.md)                         | Role-based access control (RBAC) | Shipped | v0.5.0  |
+| Spec                                              | Title                                 | Status   | Release         |
+| ------------------------------------------------- | ------------------------------------- | -------- | --------------- |
+| [0001](0001-project-foundation.md)                | Project foundation                    | Shipped  | v0.1.0          |
+| [0002](0002-pwa-and-app-shell.md)                 | PWA & responsive app shell            | Shipped  | v0.2.0          |
+| [0003](0003-security-hardening.md)                | Production security hardening         | Shipped  | v0.3.0          |
+| [0004](0004-graphify-claude-integration.md)       | graphify & CLAUDE.md integration      | Shipped  | v0.3.1          |
+| [0005](0005-cloudflare-tunnel-deployment.md)      | Cloudflare Tunnel deployment          | Shipped  | v0.4.0          |
+| [0006](0006-rbac.md)                              | Role-based access control (RBAC)      | Shipped  | v0.5.0          |
+| [0007](0007-file-uploads.md)                      | File uploads & object storage (MinIO) | Proposed | —               |
+| [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Proposed | —               |
+| [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Proposed | —               |
+| [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Proposed | —               |
+| [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Proposed | —               |
+| [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
+| [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).
+>
+> Remaining specs map to the [roadmap](../README.md#roadmap), in priority
+> order, each scoped to ship as its own release. Numbering has gaps (0008,
+> 0012, 0014, 0016) from descoped drafts — SEO metadata, error tracking,
+> Cloudflare Analytics, and i18n aren't planned right now; the numbers aren't
+> reused. 0017 is written but intentionally not scheduled — see its
+> "Non-goals".
