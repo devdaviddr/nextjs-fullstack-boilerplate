@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
+import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
 const APP_NAME = 'Next.js Full-Stack Boilerplate'
@@ -35,15 +37,22 @@ export const viewport: Viewport = {
   ],
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The per-request CSP nonce is set on the request headers in `src/proxy.ts`.
+  // Thread it into next-themes so its anti-flash inline script runs under the
+  // strict production CSP without loosening `script-src`.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-dvh antialiased">
-        {children}
-        <ServiceWorkerRegister />
-        <InstallPrompt />
+        <ThemeProvider nonce={nonce}>
+          {children}
+          <ServiceWorkerRegister />
+          <InstallPrompt />
+        </ThemeProvider>
       </body>
     </html>
   )
