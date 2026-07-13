@@ -8,7 +8,19 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.13.1] - 2026-07-13
+## [0.13.2] - 2026-07-13
+
+### Fixed
+
+- OAuth users are now marked email-verified at creation. GitHub/Google verify
+  email ownership before issuing their token, but the providers don't map
+  `emailVerified`, so an OAuth account previously landed with
+  `email_verified = null` — which meant `REQUIRE_EMAIL_VERIFICATION=true` would
+  needlessly nag a provider-verified user with the verify banner and soft-gate
+  their admin actions. `events.createUser` now sets `emailVerified` for
+  adapter-created (OAuth) users. Credentials users are unaffected — they still
+  verify via the emailed link. (Password reset was already correct: it only
+  applies to accounts that have a password.)
 
 ### Documentation
 

@@ -156,10 +156,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     authenticatorsTable: authenticators,
   }),
   events: {
-    // Fires once, only for adapter-created (OAuth) users — assign the
-    // bootstrap role here so a fresh OAuth deployment has a working admin.
+    // Fires once, only for adapter-created (OAuth) users.
     async createUser({ user }) {
-      if (user.id) await bootstrapNewUserRole(user.id)
+      if (!user.id) return
+      // Assign the bootstrap role so a fresh OAuth deployment has a working admin.
+      await bootstrapNewUserRole(user.id)
+      // GitHub/Google verify email ownership before issuing their token, so an
+      // OAuth account is already email-verified — but the providers don't map
+      // `emailVerified` themselves, so we set it here. Without this, an OAuth
+      // user would be needlessly nagged by the REQUIRE_EMAIL_VERIFICATION soft
+      // gate despite a provider-verified email.
+      await db
+        .update(users)
+        .set({ emailVerified: new Date() })
+        .where(eq(users.id, user.id))
     },
   },
   callbacks: {

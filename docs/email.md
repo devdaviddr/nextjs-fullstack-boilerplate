@@ -81,6 +81,12 @@ email is enabled):
 - They are **not** locked out of the whole app — it's a nudge, not a wall. Apps
   needing a hard gate can extend `proxy.ts`'s role-required map.
 
+> **OAuth users are auto-verified.** [GitHub/Google](oauth.md) confirm email
+> ownership before issuing their token, so a user created via OAuth has
+> `email_verified` set at creation (in `events.createUser`) and the soft gate
+> skips them. Password reset, by contrast, only applies to accounts that have a
+> password — an OAuth-only account has nothing to reset.
+
 ```bash
 REQUIRE_EMAIL_VERIFICATION="false"   # default
 ```
