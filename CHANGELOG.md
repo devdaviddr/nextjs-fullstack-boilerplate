@@ -8,6 +8,15 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-13
+
+### Changed
+
+- The app shell now shows the app icon (the same mark as the favicon/PWA icon)
+  to the left of the wordmark in the sidebar, mobile drawer, and mobile topbar.
+  The icon is decorative (`alt=""`) since the adjacent text already names the
+  app. Rendered via `next/image` from `public/icon-192.png`.
+
 ## [0.9.0] - 2026-07-13
 
 ### Added
