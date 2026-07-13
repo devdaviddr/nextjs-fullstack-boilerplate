@@ -125,7 +125,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] SEO & OpenGraph metadata — shareable link-preview cards
 - [x] OAuth providers (GitHub, Google)
 - [x] Email verification & password reset
-- [ ] Web Push notifications
+- [x] Web Push notifications
 - [ ] Automated backups — nightly Postgres + MinIO, documented restore path
 
 **Explicit non-goals** (not planned for the single-box portfolio model):

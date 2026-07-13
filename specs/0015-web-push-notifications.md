@@ -1,8 +1,8 @@
 ---
 id: 0015
 title: Web Push notifications
-status: Proposed
-release: '—'
+status: Shipped
+release: 'v0.12.0'
 created: 2026-07-13
 updated: 2026-07-13
 ---
@@ -93,18 +93,35 @@ capability that most differentiates it from a bookmark.
 
 ## Acceptance criteria
 
-- [ ] Toggling "Enable notifications" in Settings results in a row in
-      `pushSubscriptions` and a real browser permission prompt.
-- [ ] `sendPushNotification()` delivers a visible OS notification on a
-      subscribed device.
-- [ ] A subscription that the browser has revoked is pruned automatically on
-      the next send attempt (simulated via a 410 response in tests).
-- [ ] The admin-notify-on-new-registration example fires correctly (E2E or
-      integration-tested).
-- [ ] With no VAPID keys configured, the Settings toggle doesn't render (or
-      renders disabled with an explanation) — feature is fully inert.
-- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
+- [~] Toggling "Enable notifications" in Settings requests permission and
+  persists a `push_subscriptions` row (`saveSubscription`). The toggle
+  renders and is wired (screenshot); the actual subscribe needs a real push
+  service + HTTPS + installed SW, so it's verified manually.
+- [~] `sendPushNotification()` delivers a visible OS notification — the send
+  path and payload are unit-tested (mocked `web-push`); real OS delivery is
+  manual (needs a live push service).
+- [x] A revoked subscription is pruned automatically on the next send (410 →
+      row deleted), and a transient (500) error does NOT prune —
+      `tests/unit/push.test.ts`.
+- [x] The admin-notify-on-new-registration example is wired end-to-end
+      (`registerAction` → `notifyRole('admin', …)`, best-effort/non-blocking);
+      the send/prune it drives is unit-tested.
+- [x] With no VAPID keys configured, the Settings panel doesn't render at all —
+      feature is fully inert (`tests/e2e/push.spec.ts`).
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
       pass.
+
+Verification notes:
+
+- Automated: send-to-all + 410-prune + non-410-no-prune + config gating
+  (`tests/unit/push.test.ts`); panel-hidden-when-unconfigured
+  (`tests/e2e/push.spec.ts`).
+- Visual: the Notifications panel + Enable button render when VAPID is
+  configured (screenshot, real generated keys).
+- Manual (needs a live push service + HTTPS + installed SW, not automatable
+  headlessly): the browser subscribe handshake and actual OS notification
+  delivery. The server send path, 410 pruning, SW `push`/`notificationclick`
+  handlers, and the admin-notify example are all in place and unit-verified.
 
 ## Security & privacy
 

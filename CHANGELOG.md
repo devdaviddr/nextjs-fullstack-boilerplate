@@ -8,6 +8,28 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-13
+
+### Added
+
+- Web Push notifications ([spec 0015](specs/0015-web-push-notifications.md)).
+  Activates the push hooks that were stubbed in `public/sw.js` since the PWA
+  work: a `push` handler that shows the notification and a `notificationclick`
+  handler that focuses/opens the right tab. A new `push_subscriptions` table
+  stores per-device subscriptions; Settings gains an "Enable notifications"
+  toggle (permission prompt → `pushManager.subscribe` → `saveSubscription`
+  server action, ownership-checked delete on disable). `sendPushNotification()`
+  / `notifyRole()` server helpers send via `web-push` and auto-prune
+  subscriptions the push service reports as Gone (HTTP 404/410). Wired
+  end-to-end with one worked example — admins are notified when a new user
+  self-registers. VAPID keys are opt-in env vars (`VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`); with none set the feature — including
+  the Settings panel — is fully inert. The private key is server-only.
+
+### Changed
+
+- New `push_subscriptions` table (migration `0007_sticky_slyde`).
+
 ## [0.11.0] - 2026-07-13
 
 ### Added

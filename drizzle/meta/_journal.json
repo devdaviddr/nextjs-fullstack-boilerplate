@@ -50,6 +50,13 @@
       "when": 1783919506497,
       "tag": "0006_daily_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783920393205,
+      "tag": "0007_sticky_slyde",
+      "breakpoints": true
     }
   ]
 }

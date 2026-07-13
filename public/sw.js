@@ -6,7 +6,7 @@
 // are cached; everything else is network-only with an offline fallback.
 //
 // Bump CACHE_VERSION to force old caches to be discarded on next activate.
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const ASSET_CACHE = `assets-${CACHE_VERSION}`
 const OFFLINE_URL = '/offline'
 const PRECACHE = [OFFLINE_URL, '/icon-192.png', '/manifest.webmanifest']
@@ -92,6 +92,40 @@ self.addEventListener('fetch', (event) => {
   // Everything else: pass through to the network.
 })
 
-// --- Push notifications (left as hooks; wire up later) ----------------------
-// self.addEventListener('push', (event) => { /* show notification */ })
-// self.addEventListener('notificationclick', (event) => { /* focus client */ })
+// --- Push notifications -----------------------------------------------------
+// Payload is JSON: { title, body, url } (see src/lib/push). Kept defensive so a
+// malformed/absent payload still shows something rather than throwing.
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { title: 'Notification', body: event.data ? event.data.text() : '' }
+  }
+  const title = data.title || 'Notification'
+  const options = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/' },
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// Focus an existing tab on the target URL if one is open, else open a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || '/'
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(target) && 'focus' in client) {
+            return client.focus()
+          }
+        }
+        return self.clients.openWindow ? self.clients.openWindow(target) : null
+      }),
+  )
+})

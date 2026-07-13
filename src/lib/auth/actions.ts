@@ -11,6 +11,7 @@ import { sendVerificationEmail } from '@/lib/auth/email-verification'
 import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
 import { verifyInviteToken } from '@/lib/auth/invite'
+import { notifyRole } from '@/lib/push'
 import { logger } from '@/lib/logger'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
@@ -171,6 +172,14 @@ export async function registerAction(
   // Kick off email verification (no-op when email is disabled). A send failure
   // is swallowed inside sendVerificationEmail so it never blocks sign-in.
   await sendVerificationEmail(email)
+
+  // Worked example of Web Push (no-op when VAPID isn't configured): tell admins
+  // a new user just registered. Best-effort — never blocks registration.
+  await notifyRole('admin', {
+    title: 'New user registered',
+    body: `${name || email} just created an account.`,
+    url: '/settings',
+  })
 
   try {
     await signIn('credentials', { email, password, redirectTo: '/dashboard' })
