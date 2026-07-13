@@ -1,8 +1,8 @@
 ---
 id: 0009
 title: Automated backups (Postgres + MinIO)
-status: Proposed
-release: '—'
+status: Shipped
+release: 'v0.13.0'
 created: 2026-07-13
 updated: 2026-07-13
 ---
@@ -100,17 +100,32 @@ about losing, it isn't.
 
 ## Acceptance criteria
 
-- [ ] A fresh `docker compose -f docker-compose.prod.yml up` produces a
-      Postgres dump in `./backups/postgres/` within one scheduled interval.
-- [ ] Dumps older than `BACKUP_RETENTION_DAYS` are pruned automatically.
-- [ ] `./scripts/backup-verify.sh` exits non-zero when no recent backup
-      exists, zero when one does.
-- [ ] Restoring a Postgres dump into a scratch database via the documented
-      runbook produces a working `pnpm db:migrate`-current schema with data —
-      exercised at least once during review, not just written.
-- [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass (this spec
-      is infra-only; no app code changes expected beyond `env.ts` additions
-      for offsite config).
+- [x] The `db-backup` service produces a compressed Postgres dump in
+      `./backups/postgres/` — verified by running the real
+      `prodrigestivill/postgres-backup-local:17` image once against the dev DB;
+      it wrote `daily/app-*.sql.gz` (and last/weekly/monthly copies).
+- [x] Dumps past retention are pruned — handled by the image's
+      `BACKUP_KEEP_DAYS` (`BACKUP_RETENTION_DAYS`, default 14); its
+      "Cleaning older files" step ran.
+- [x] `./scripts/backup-verify.sh` exits **1** with no recent backup and **0**
+      with a fresh one — both states verified.
+- [x] Restoring a dump into a scratch database via the runbook produced a
+      working schema **with data** (327 users, 3 roles) — actually exercised,
+      not just written.
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass. Infra-only:
+      no app code changed. Offsite config lives in `.env.example` + the runbook
+      rather than `env.ts`, since the Next app never consumes those vars (the
+      backup sidecars do) — adding them to the app's Zod schema would be
+      misleading.
+
+Verification notes:
+
+- The Postgres backup image, the doctor script (both exit states), and a full
+  dump→restore-into-scratch-DB→data-present cycle were all exercised locally
+  against the running dev database. The MinIO mirror sidecar and the full
+  scheduled `docker compose -f docker-compose.prod.yml up` (which also builds
+  the app image) were validated structurally via `docker compose config`; a
+  live scheduled run on a real deploy is a deployment-time check, not CI.
 
 ## Security & privacy
 

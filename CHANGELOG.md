@@ -8,6 +8,22 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-13
+
+### Added
+
+- Automated backups ([spec 0009](specs/0009-automated-backups.md)). The
+  production compose stack gains a `db-backup` service (maintained
+  `postgres-backup-local` image) writing nightly compressed Postgres dumps to
+  `./backups/postgres/` with rolling retention (`BACKUP_RETENTION_DAYS`,
+  default 14), and a `minio-backup` sidecar that `mc mirror`s the object bucket
+  to `./backups/minio/` on an interval. A `scripts/backup-verify.sh` doctor
+  script (mirrors `tunnel-verify.sh`) fails when the newest dump is stale or
+  missing, so a silently-broken backup gets caught. Full restore runbook in
+  [`docs/backups.md`](docs/backups.md), including an optional, opt-in offsite
+  copy (e.g. Cloudflare R2). `backups/` is git- and docker-ignored (dumps
+  contain user data).
+
 ## [0.12.0] - 2026-07-13
 
 ### Added

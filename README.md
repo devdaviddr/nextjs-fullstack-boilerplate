@@ -68,6 +68,7 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
 | 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |
+| 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite   |
 | 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release       |
 
 ## Tech stack
@@ -126,7 +127,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] OAuth providers (GitHub, Google)
 - [x] Email verification & password reset
 - [x] Web Push notifications
-- [ ] Automated backups — nightly Postgres + MinIO, documented restore path
+- [x] Automated backups — nightly Postgres + MinIO, documented restore path
 
 **Explicit non-goals** (not planned for the single-box portfolio model):
 internationalisation (i18n), third-party error tracking, and shared-store

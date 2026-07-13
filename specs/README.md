@@ -52,7 +52,7 @@ other — one isn't a substitute for the other.
 | [0005](0005-cloudflare-tunnel-deployment.md)      | Cloudflare Tunnel deployment          | Shipped  | v0.4.0          |
 | [0006](0006-rbac.md)                              | Role-based access control (RBAC)      | Shipped  | v0.5.0          |
 | [0007](0007-file-uploads.md)                      | File uploads & object storage (MinIO) | Shipped  | v0.6.0          |
-| [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Proposed | —               |
+| [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Shipped  | v0.13.0         |
 | [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Shipped  | v0.10.0         |
 | [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Shipped  | v0.11.0         |
 | [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Shipped  | v0.8.0          |
