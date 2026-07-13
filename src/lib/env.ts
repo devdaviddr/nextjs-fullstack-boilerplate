@@ -46,6 +46,15 @@ const envSchema = z
     AUTH_GOOGLE_ID: optionalStr,
     AUTH_GOOGLE_SECRET: optionalStr,
 
+    // --- Web Push (opt-in) -------------------------------------------------
+    // Generate a keypair with:  npx web-push generate-vapid-keys
+    // The feature is inert unless all three are set. VAPID_SUBJECT is a contact
+    // URL, typically `mailto:you@example.com`. The public key is safe to expose
+    // to the client; the private key is server-only.
+    VAPID_PUBLIC_KEY: optionalStr,
+    VAPID_PRIVATE_KEY: optionalStr,
+    VAPID_SUBJECT: optionalStr,
+
     // --- Public app URL ----------------------------------------------------
     // Canonical, publicly-reachable origin of this deployment. Used for
     // `metadataBase` (so OpenGraph/Twitter image URLs resolve absolutely) and

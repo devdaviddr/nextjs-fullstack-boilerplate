@@ -175,6 +175,25 @@ export const files = pgTable(
   (table) => [index('files_owner_id_idx').on(table.ownerId)],
 )
 
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // The push service endpoint URL — unique per browser/device subscription.
+    endpoint: text('endpoint').notNull().unique(),
+    // Web Push encryption keys from the browser's PushSubscription.
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [index('push_subscriptions_user_id_idx').on(table.userId)],
+)
+
 // Drizzle relations — required for `db.query.*` relational queries with `with`.
 // These are ORM-only (no database migration).
 export const usersRelations = relations(users, ({ many }) => ({
@@ -212,3 +231,5 @@ export type UserRole = typeof userRoles.$inferSelect
 export type NewUserRole = typeof userRoles.$inferInsert
 export type FileRecord = typeof files.$inferSelect
 export type NewFileRecord = typeof files.$inferInsert
+export type PushSubscription = typeof pushSubscriptions.$inferSelect
+export type NewPushSubscription = typeof pushSubscriptions.$inferInsert

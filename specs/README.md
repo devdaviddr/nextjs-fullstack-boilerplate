@@ -56,7 +56,7 @@ other — one isn't a substitute for the other.
 | [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Shipped  | v0.10.0         |
 | [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Shipped  | v0.11.0         |
 | [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Shipped  | v0.8.0          |
-| [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
+| [0015](0015-web-push-notifications.md)            | Web Push notifications                | Shipped  | v0.12.0         |
 | [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 | [0018](0018-profile-photo-upload.md)              | Profile photo upload                  | Shipped  | v0.7.0          |
 | [0019](0019-seo-opengraph-metadata.md)            | SEO & OpenGraph metadata              | Shipped  | v0.9.0          |

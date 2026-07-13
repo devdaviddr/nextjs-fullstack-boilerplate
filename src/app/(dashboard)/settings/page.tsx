@@ -7,6 +7,7 @@ import {
   type UserWithRoles,
 } from '@/lib/auth/admin-actions'
 import { getLinkedAccounts } from '@/lib/auth/account-actions'
+import { getVapidPublicKey } from '@/lib/push'
 import { listMyFiles } from '@/lib/storage/actions'
 import { SettingsClient } from './settings-client'
 
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
       roles={roles ?? []}
       files={files ?? []}
       linkedAccounts={linkedAccounts}
+      pushPublicKey={getVapidPublicKey()}
       isAdmin={isAdmin}
     />
   )
