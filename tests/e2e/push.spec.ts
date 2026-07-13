@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // Actual push delivery needs VAPID keys, HTTPS, and a real push service, so the
 // subscribe→deliver round-trip is verified manually (see spec 0015). Here we

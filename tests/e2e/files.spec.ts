@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // File uploads (spec 0007): a fresh user uploads, lists, downloads, and
 // deletes a file, and can't reach another user's file by guessing its id.

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // OAuth UI behaviour that's verifiable without real provider credentials.
 // The full round-trip (GitHub/Google → user creation, linking, unlinking) needs

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // RBAC: relies on the seeded admin (demo@example.com / Password123).
 

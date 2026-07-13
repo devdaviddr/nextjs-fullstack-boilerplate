@@ -8,7 +8,23 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.13.2] - 2026-07-13
+## [0.13.3] - 2026-07-13
+
+### Added
+
+- Unit tests for the auth-recovery internals that were previously verified only
+  by reading: `verification-tokens` (single-use consume, expiry rejection,
+  hash-not-raw storage, purpose mismatch) and `verification-guard` (the
+  `REQUIRE_EMAIL_VERIFICATION` soft-gate branches). +13 unit tests.
+
+### Fixed
+
+- Flaky E2E runs. Registration was rate-limited per **IP**, so every test shared
+  one `register:::1` bucket that accumulated across the suite and tripped under
+  CI retries. Each test now gets a unique client IP via `X-Forwarded-For`
+  (`tests/e2e/fixtures.ts`), isolating rate-limit buckets so limits only fire
+  in the test that provokes them. A Playwright `globalSetup` also seeds the demo
+  admin (idempotent), making local runs self-healing if the dev DB was mutated.
 
 ### Fixed
 

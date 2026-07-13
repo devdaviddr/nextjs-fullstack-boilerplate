@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 // Profile photo upload (spec 0018): built on the same storage/ownership
 // machinery as general file uploads (spec 0007), so these tests focus on
