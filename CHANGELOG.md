@@ -8,7 +8,20 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.13.3] - 2026-07-13
+## [0.13.4] - 2026-07-13
+
+### Added
+
+- End-to-end email round-trips via a Mailpit catcher (`tests/e2e/email-flow.spec.ts`):
+  register → emailed verification link → verified; and request reset → emailed
+  link → new password → sign in with it. This closes the last manually-verified
+  gap in spec 0011. A `mailpit` service is added to `docker-compose.yml`
+  (`pnpm docker:mail`) and the CI e2e job; the e2e web server points at it
+  (`playwright.config` / CI env). The round-trip tests self-skip when Mailpit
+  isn't reachable, so a local run without it still passes the rest of the suite.
+- Unit test for the email-disabled FR6 branch of `requestPasswordReset`
+  (`tests/unit/recovery-actions.test.ts`), which the e2e suite can no longer
+  cover now that it runs email-enabled.
 
 ### Added
 

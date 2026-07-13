@@ -23,5 +23,20 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Point the app at the local Mailpit catcher so the reset/verification
+    // flows can be exercised end-to-end (email-flow.spec.ts reads the messages
+    // back over Mailpit's API). Merged on top of the ambient env, so
+    // DATABASE_URL / S3_* etc. still come through. NOTE: locally this only
+    // applies when Playwright starts the server — a pre-existing `pnpm dev`
+    // (reuseExistingServer) keeps its own env, and the email-flow tests skip
+    // themselves if Mailpit isn't reachable.
+    env: {
+      EMAIL_ENABLED: 'true',
+      EMAIL_FROM: 'e2e@example.com',
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: '1025',
+      SMTP_SECURE: 'false',
+      APP_URL: baseURL,
+    },
   },
 })

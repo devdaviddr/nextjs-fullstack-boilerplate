@@ -1,8 +1,9 @@
 import { expect, test } from './fixtures'
 
-// The email round-trip (send link → click → reset) needs a mail catcher and is
-// verified manually (see spec 0011). These cover the routes and the
-// email-disabled behaviour, which is the default in the test env.
+// Route + UI behaviour of the reset/verify pages. The full send→click→reset
+// round-trip lives in email-flow.spec.ts (against Mailpit). The FR6
+// "email not configured" message is covered by a unit test
+// (tests/unit/recovery-actions.test.ts) since the e2e suite runs with email on.
 
 test('login links to the forgot-password page', async ({ page }) => {
   await page.goto('/login')
@@ -11,15 +12,15 @@ test('login links to the forgot-password page', async ({ page }) => {
   await expect(page.getByText(/forgot your password/i)).toBeVisible()
 })
 
-test('forgot-password explains when email is not configured', async ({
+test('forgot-password gives the same anti-enumeration reply for any email', async ({
   page,
 }) => {
-  // The test deployment has no email provider, so requesting a reset must say
-  // so (FR6) rather than pretend to send.
+  // For an unregistered email it must NOT reveal that no account exists — the
+  // response is the generic "if an account exists…" message.
   await page.goto('/forgot-password')
-  await page.getByLabel('Email').fill('someone@example.com')
+  await page.getByLabel('Email').fill(`nobody+${Date.now()}@example.com`)
   await page.getByRole('button', { name: 'Send reset link' }).click()
-  await expect(page.getByText(/isn't configured/i)).toBeVisible()
+  await expect(page.getByText(/if an account exists/i)).toBeVisible()
 })
 
 test('reset-password rejects a link with no token', async ({ page }) => {
