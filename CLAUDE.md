@@ -40,7 +40,22 @@ Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
   per-request nonce — don't introduce inline scripts without it.
 - **Session reads** go through `getCurrentSession()` (`src/lib/auth/session.ts`),
   which treats undecryptable cookies as signed-out but rethrows real errors.
+- **Client-side session refresh**: `useSession().update()` called with **no
+  argument** is just a GET re-fetch — it does **not** re-run the `jwt`
+  callback's `trigger === 'update'` branch. Call `update({})` (any defined
+  argument) to actually POST and trigger a server-side refresh (e.g. after a
+  profile-photo change, `src/components/auth/avatar-upload.tsx`). Confirmed
+  against the installed `next-auth` package source, not assumed.
 - **Mutations** are Server Actions (`src/lib/auth/actions.ts`), not API routes.
+- **Server Action errors a user must see**: return `{ ok: false, error }`
+  (see `src/lib/auth/actions.ts`'s `AuthFormState`, `src/lib/storage/actions.ts`'s
+  `ActionResult<T>`) — never `throw` for expected/validation failures. Next.js
+  redacts a thrown Error's `message` in production builds, so a thrown
+  validation error silently becomes "an error occurred" for the user. This
+  only surfaces by testing the actual production build (`next start` /
+  Docker), not `next dev` — do that before shipping any new Server Action
+  with user-facing error messages. Reserve `throw` for genuinely unexpected
+  failures (DB/S3 down), where redaction in production is correct.
 - **Rate limiting** (`src/lib/rate-limit.ts`) is enforced in the server actions
   and in the credentials `authorize` callback (non-bypassable). It's in-memory
   (single-instance) — swap for a shared store if scaling out.

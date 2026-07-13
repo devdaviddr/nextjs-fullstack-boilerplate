@@ -40,6 +40,15 @@ async function getUserRoles(userId: string): Promise<string[]> {
   return roleRows.map((r) => r.name)
 }
 
+/** Current `image` column for a user — used to refresh the JWT after a profile-photo change. */
+async function getUserImage(userId: string): Promise<string | null> {
+  const row = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { image: true },
+  })
+  return row?.image ?? null
+}
+
 /**
  * Full, Node-runtime Auth.js instance. Composes the edge-safe `authConfig`
  * with the Credentials provider (which needs the database and argon2).
@@ -57,6 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id
         token.roles = user.roles ?? []
+        token.picture = user.image ?? null
       }
       // Back-fill id from `sub` so pre-RBAC tokens self-heal instead of showing
       // a blank id and no roles.
@@ -64,6 +74,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Fetch roles on an explicit session update, or when a token has none yet.
       if ((trigger === 'update' || token.roles === undefined) && token.id) {
         token.roles = await getUserRoles(token.id as string)
+      }
+      // Refresh the avatar on an explicit session update too (e.g. after a
+      // profile-photo upload/removal) — same trigger, sibling fetch.
+      if (trigger === 'update' && token.id) {
+        token.picture = await getUserImage(token.id as string)
       }
       return token
     },

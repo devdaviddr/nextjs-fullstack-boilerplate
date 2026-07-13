@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Mail, User } from 'lucide-react'
+import { AvatarUpload } from '@/components/auth/avatar-upload'
 import { RoleBadges } from '@/components/auth/role-selector'
 
 interface CurrentUserCardProps {
@@ -16,6 +17,7 @@ interface CurrentUserCardProps {
     id: string
     name: string | null
     email: string
+    image: string | null | undefined
     roles: string[]
   }
   allRoles: Array<{ id: string; name: string }>
@@ -34,7 +36,8 @@ export function CurrentUserCard({ user, allRoles }: CurrentUserCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <AvatarUpload name={user.name} image={user.image} />
+        <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
           <div className="space-y-1">
             <Label className="text-muted-foreground text-sm font-medium">
               Name

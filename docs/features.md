@@ -65,6 +65,12 @@ See [Database](database.md).
   download, delete) — available to every signed-in user, not admin-gated.
 - Deleting a user removes their files' objects and rows too — no orphaned
   storage.
+- **Profile photos** — every signed-in user can upload/replace/remove their
+  own avatar from Settings, built entirely on the storage above. Narrower
+  size/type limits than general uploads; still counts against the same
+  per-user quota. Surfaced through Auth.js's standard `session.user.image` —
+  shows in the app shell topbar and Settings without a page reload (see
+  [spec 0018](../specs/0018-profile-photo-upload.md)).
 
 See [spec 0007](../specs/0007-file-uploads.md).
 

@@ -11,6 +11,7 @@ interface SettingsClientProps {
       id: string
       name: string | null
       email: string
+      image: string | null | undefined
       roles: string[]
     }
   }

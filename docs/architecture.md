@@ -133,7 +133,7 @@ src/
 │   ├── error.tsx · global-error.tsx · not-found.tsx
 │   └── layout.tsx · page.tsx · globals.css
 ├── components/
-│   ├── auth/                    # forms, submit button, sign-out
+│   ├── auth/                    # forms, submit button, sign-out, avatar-upload
 │   ├── files/                   # "My Files" panel (upload/list/download/delete)
 │   ├── pwa/                     # service-worker register, install prompt
 │   ├── shell/                   # app-shell, sidebar-nav

@@ -2,13 +2,23 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Menu, X } from 'lucide-react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { SidebarNav } from '@/components/shell/sidebar-nav'
 import { cn } from '@/lib/utils'
 
 const BRAND = 'Boilerplate'
+
+function initials(name?: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  const first = parts[0]?.[0] ?? ''
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : ''
+  return (first + last).toUpperCase() || '?'
+}
 
 /**
  * Minimal, borderless app shell: a fixed sidebar on desktop that collapses to
@@ -19,12 +29,23 @@ export function AppShell({
   user,
   children,
 }: {
-  user: { name?: string | null; email?: string | null }
+  user: {
+    name?: string | null
+    email?: string | null
+    image?: string | null
+  }
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const [lastPathname, setLastPathname] = useState(pathname)
+  // `user` is a snapshot from the server component that rendered this shell
+  // — it never changes on its own. `useSession()` shares the same
+  // SessionProvider context that a profile-photo upload calls `update()`
+  // on, so prefer its live value once hydrated (falls back to the snapshot
+  // before that, e.g. the very first paint).
+  const { data: liveSession } = useSession()
+  const avatarImage = liveSession?.user?.image ?? user.image
 
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -152,6 +173,14 @@ export function AppShell({
               <span className="text-muted-foreground hidden max-w-[40vw] truncate text-sm sm:inline">
                 {user.email}
               </span>
+              <Avatar className="size-8">
+                {avatarImage && (
+                  <AvatarImage src={avatarImage} alt={user.name ?? ''} />
+                )}
+                <AvatarFallback className="text-xs">
+                  {initials(user.name)}
+                </AvatarFallback>
+              </Avatar>
               <SignOutButton />
             </div>
           </div>

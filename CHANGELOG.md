@@ -8,6 +8,31 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-13
+
+### Added
+
+- Profile photo upload ([spec 0018](specs/0018-profile-photo-upload.md)):
+  every signed-in user can upload/replace/remove their own avatar from
+  Settings, built entirely on the file-storage infrastructure from
+  [0007](specs/0007-file-uploads.md). Narrower size/type limits than general
+  uploads; counts against the same per-user quota. Surfaced through Auth.js's
+  standard `session.user.image` — shows in the app shell topbar and Settings
+  immediately, no re-login required. `users` gains a nullable
+  `avatar_file_id` column (FK → `files.id`, `set null`).
+- shadcn `Avatar` component (`src/components/ui/avatar.tsx`).
+
+### Fixed
+
+- `useSession().update()` called with no argument only re-fetches the
+  current session — it never reruns the `jwt` callback's
+  `trigger === 'update'` branch, so client-triggered session refreshes
+  (e.g. after a profile-photo change) silently did nothing. Fixed by calling
+  `update({})`; documented in `CLAUDE.md` since it's easy to get wrong again.
+- `AvatarFallback`'s default styling (`bg-muted`/`text-muted-foreground`,
+  shadcn's own default) failed WCAG AA contrast at small sizes — caught by
+  the existing a11y test suite, fixed by switching to `text-foreground`.
+
 ## [0.6.0] - 2026-07-13
 
 ### Added
@@ -182,7 +207,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.0...v0.5.1
