@@ -59,7 +59,7 @@ other — one isn't a substitute for the other.
 | [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
 | [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 | [0018](0018-profile-photo-upload.md)              | Profile photo upload                  | Shipped  | v0.7.0          |
-| [0019](0019-seo-opengraph-metadata.md)            | SEO & OpenGraph metadata              | Proposed | —               |
+| [0019](0019-seo-opengraph-metadata.md)            | SEO & OpenGraph metadata              | Shipped  | v0.9.0          |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).

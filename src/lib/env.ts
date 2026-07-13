@@ -29,6 +29,17 @@ const envSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
 
+    // --- Public app URL ----------------------------------------------------
+    // Canonical, publicly-reachable origin of this deployment. Used for
+    // `metadataBase` (so OpenGraph/Twitter image URLs resolve absolutely) and
+    // the robots/sitemap routes. Optional with a dev default so zero-config
+    // still boots; set it per fork to the real domain for correct share cards.
+    APP_URL: z
+      .string()
+      .url('APP_URL must be a valid URL')
+      .optional()
+      .default('http://localhost:3000'),
+
     // --- Email (opt-in) ---------------------------------------------------
     // Everything email-related is OFF unless EMAIL_ENABLED=true AND a provider
     // (SMTP) is configured. See src/lib/email/. SMTP is provider-agnostic:
