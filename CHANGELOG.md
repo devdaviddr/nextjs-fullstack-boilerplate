@@ -8,6 +8,28 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-13
+
+### Added
+
+- Specs for the next phase of the roadmap: file uploads & object storage
+  ([0007](specs/0007-file-uploads.md)), automated backups
+  ([0009](specs/0009-automated-backups.md)), OAuth providers
+  ([0010](specs/0010-oauth-providers.md)), email verification & password
+  reset ([0011](specs/0011-email-verification-password-reset.md)), dark-mode
+  theming ([0013](specs/0013-dark-mode-theming.md)), Web Push
+  ([0015](specs/0015-web-push-notifications.md)), and a written-but-not-
+  scheduled note on shared-store rate limiting
+  ([0017](specs/0017-shared-store-rate-limiting.md)).
+
+### Changed
+
+- Condensed the README roadmap checklist; it now points at `specs/` for
+  detail instead of carrying per-item prose.
+- Simplified the branch strategy to trunk-based: `main` is the only
+  long-lived branch (no `develop`). Feature branches go `main` → `feature/*`
+  → `main`; CI/CodeQL triggers updated to match.
+
 ## [0.5.1] - 2026-07-13
 
 ### Added
@@ -136,7 +158,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.4.0...v0.4.1

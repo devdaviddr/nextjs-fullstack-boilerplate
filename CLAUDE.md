@@ -60,8 +60,10 @@ Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 - **Spec-driven.** Non-trivial features start with a spec in [`specs/`](specs/)
   (copy `specs/TEMPLATE.md`, status `Proposed` → `Accepted` → `Shipped`). See
   [`specs/README.md`](specs/README.md).
-- **Gitflow.** `develop` is the default/integration branch; feature work branches
-  off it; releases merge to `main` and are tagged (`vX.Y.Z`). Pre-1.0.
+- **Trunk-based.** `main` is the only long-lived branch (no `develop`).
+  Feature work branches off `main` as `feature/<slug>`, PRs back into `main`,
+  and the merge itself is the release — bump version, update `CHANGELOG.md`,
+  tag (`vX.Y.Z`). Pre-1.0.
 - **Conventional Commits**, enforced by a commitlint `commit-msg` hook. Keep
   commit **body lines ≤ 100 characters**. A `pre-commit` hook runs lint-staged.
 - Update `CHANGELOG.md` (Keep a Changelog) for user-facing changes.
