@@ -71,6 +71,5 @@ Web Push is wired up (opt-in). The service worker handles `push` (shows the
 notification) and `notificationclick` (focuses or opens the right tab);
 subscriptions are stored per device in `push_subscriptions`, managed from a
 Settings toggle, and sent server-side via `src/lib/push/`. It stays fully inert
-until the `VAPID_*` env vars are set. See
-[Features → Web Push](features.md#web-push-notifications-optional) and
-[spec 0015](../specs/0015-web-push-notifications.md).
+until the `VAPID_*` env vars are set. Full setup and design in
+[Web Push](push.md).

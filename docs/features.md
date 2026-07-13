@@ -47,7 +47,7 @@ See [Email](email.md) to configure it and for the reset/verification flows.
 - **Per-device subscriptions** (`push_subscriptions`) — enable/disable from Settings; the private key never reaches the client.
 - **Server send helpers** (`src/lib/push/`) — `sendPushNotification(userId, …)` / `notifyRole('admin', …)`, best-effort (a send failure never blocks the triggering action) and auto-pruning subscriptions the push service reports as Gone (404/410).
 - **Worked example** — admins are notified when a new user self-registers.
-- **Service worker** shows the notification on `push` and focuses/opens the right tab on `notificationclick`. Active in production builds. See [spec 0015](../specs/0015-web-push-notifications.md).
+- **Service worker** shows the notification on `push` and focuses/opens the right tab on `notificationclick`. Active in production builds. See [Web Push](push.md).
 
 ## Database
 
