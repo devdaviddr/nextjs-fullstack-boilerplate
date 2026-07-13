@@ -20,7 +20,13 @@ export default async function DashboardLayout({
 
   return (
     <SessionProvider session={session}>
-      <AppShell user={{ name: session.user.name, email: session.user.email }}>
+      <AppShell
+        user={{
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image,
+        }}
+      >
         {children}
       </AppShell>
     </SessionProvider>

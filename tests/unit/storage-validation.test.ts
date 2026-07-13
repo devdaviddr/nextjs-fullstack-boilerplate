@@ -7,6 +7,8 @@ const { mockEnv } = vi.hoisted(() => ({
 vi.mock('@/lib/env', () => ({ env: mockEnv }))
 
 import {
+  AVATAR_ALLOWED_MIME_TYPES,
+  AVATAR_MAX_SIZE_BYTES,
   buildBucketKey,
   sanitizeFilename,
   validateUpload,
@@ -85,6 +87,49 @@ describe('validateUpload', () => {
       0,
     )
     expect(result).toEqual({ ok: true })
+  })
+
+  it('applies caller-supplied size/type overrides instead of the env defaults (avatar limits)', () => {
+    // A PDF is well within the env's 10 MB default, but avatars use their
+    // own smaller cap — the override, not the env value, must win.
+    const result = validateUpload(
+      { sizeBytes: AVATAR_MAX_SIZE_BYTES + 1, mimeType: 'application/pdf' },
+      0,
+      {
+        maxSizeBytes: AVATAR_MAX_SIZE_BYTES,
+        allowedMimeTypes: AVATAR_ALLOWED_MIME_TYPES,
+      },
+    )
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringContaining('5 MB'),
+    })
+  })
+
+  it('accepts a type allowed only by the override, not the env default', () => {
+    const result = validateUpload(
+      { sizeBytes: 1024, mimeType: 'image/webp' }, // not in the env default list
+      0,
+      { maxSizeBytes: 5 * 1024 * 1024, allowedMimeTypes: ['image/webp'] },
+    )
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('still enforces the shared per-user quota when overrides are used', () => {
+    setEnv({ MAX_STORAGE_PER_USER_MB: 1 })
+    const oneMb = 1024 * 1024
+    const result = validateUpload(
+      { sizeBytes: 1024, mimeType: 'image/png' },
+      oneMb,
+      {
+        maxSizeBytes: AVATAR_MAX_SIZE_BYTES,
+        allowedMimeTypes: AVATAR_ALLOWED_MIME_TYPES,
+      },
+    )
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringContaining('1 MB storage quota'),
+    })
   })
 })
 

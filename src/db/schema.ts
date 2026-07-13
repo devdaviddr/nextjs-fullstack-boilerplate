@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   index,
@@ -30,7 +31,17 @@ export const users = pgTable(
     // per address regardless of casing at write time.
     email: text('email').notNull(),
     emailVerified: timestamp('email_verified', { mode: 'date' }),
+    // Avatar URL. Populated by an OAuth provider, or by our own upload flow
+    // (spec 0018) — set to `/api/files/{avatarFileId}` in that case.
     image: text('image'),
+    // Operational pointer to which `files` row (if any) is the current
+    // avatar, so replacing/removing one is an explicit swap rather than
+    // parsing `image`'s URL. `set null` so a `files` row can never be
+    // deleted while this points at it silently.
+    avatarFileId: text('avatar_file_id').references(
+      (): AnyPgColumn => files.id,
+      { onDelete: 'set null' },
+    ),
     // Null for accounts created purely via OAuth; set for credentials users.
     hashedPassword: text('hashed_password'),
     // Invite flow: an admin-created (passwordless) user can only claim their

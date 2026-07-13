@@ -4,13 +4,18 @@ import { eq, sql } from 'drizzle-orm'
 import { headers } from 'next/headers'
 
 import { db } from '@/db'
-import { files } from '@/db/schema'
+import { files, users } from '@/db/schema'
 import { getCurrentSession } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
 import { UPLOAD_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
 import { deleteObject, putObject } from './client'
-import { buildBucketKey, validateUpload } from './validation'
+import {
+  AVATAR_ALLOWED_MIME_TYPES,
+  AVATAR_MAX_SIZE_BYTES,
+  buildBucketKey,
+  validateUpload,
+} from './validation'
 
 export interface FileSummary {
   id: string
@@ -152,6 +157,111 @@ export async function deleteFile(fileId: string): Promise<ActionResult<null>> {
   await db.delete(files).where(eq(files.id, fileId))
 
   logger.info('File deleted', { userId, fileId })
+  return { ok: true, data: null }
+}
+
+/**
+ * Upload (or replace) the signed-in user's profile photo. The new object is
+ * uploaded and `users.image`/`avatarFileId` swapped to point at it BEFORE
+ * the previous photo (if any) is deleted — a failed upload never leaves a
+ * user with no photo. Reuses the same `files` table, quota, and rate limit
+ * as general uploads (spec 0007); only the size/type limits are narrower.
+ */
+export async function uploadProfilePhoto(
+  formData: FormData,
+): Promise<ActionResult<{ image: string }>> {
+  const userId = await requireUserId()
+
+  const rateLimitError = await uploadRateLimitError(userId)
+  if (rateLimitError) return { ok: false, error: rateLimitError }
+
+  const file = formData.get('file')
+  if (!(file instanceof File)) {
+    return { ok: false, error: 'No file provided.' }
+  }
+
+  const mimeType = file.type || 'application/octet-stream'
+  const usage = await currentUsageBytes(userId)
+  const validation = validateUpload({ sizeBytes: file.size, mimeType }, usage, {
+    maxSizeBytes: AVATAR_MAX_SIZE_BYTES,
+    allowedMimeTypes: AVATAR_ALLOWED_MIME_TYPES,
+  })
+  if (!validation.ok) {
+    return { ok: false, error: validation.error }
+  }
+
+  const previous = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { avatarFileId: true },
+  })
+
+  const bucketKey = buildBucketKey(userId, file.name)
+  const buffer = Buffer.from(await file.arrayBuffer())
+  await putObject(bucketKey, buffer, mimeType)
+
+  const [row] = await db
+    .insert(files)
+    .values({
+      ownerId: userId,
+      bucketKey,
+      originalName: file.name,
+      mimeType,
+      sizeBytes: file.size,
+    })
+    .returning()
+
+  if (!row) {
+    throw new Error('Failed to record the uploaded photo.')
+  }
+
+  const image = `/api/files/${row.id}`
+  await db
+    .update(users)
+    .set({ avatarFileId: row.id, image })
+    .where(eq(users.id, userId))
+
+  if (previous?.avatarFileId) {
+    const oldFile = await db.query.files.findFirst({
+      where: eq(files.id, previous.avatarFileId),
+      columns: { bucketKey: true },
+    })
+    if (oldFile) {
+      await deleteObject(oldFile.bucketKey)
+      await db.delete(files).where(eq(files.id, previous.avatarFileId))
+    }
+  }
+
+  logger.info('Profile photo uploaded', { userId, fileId: row.id })
+  return { ok: true, data: { image } }
+}
+
+/** Remove the signed-in user's profile photo, if any. Idempotent. */
+export async function removeProfilePhoto(): Promise<ActionResult<null>> {
+  const userId = await requireUserId()
+
+  const current = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { avatarFileId: true },
+  })
+  if (!current?.avatarFileId) {
+    return { ok: true, data: null }
+  }
+
+  await db
+    .update(users)
+    .set({ avatarFileId: null, image: null })
+    .where(eq(users.id, userId))
+
+  const oldFile = await db.query.files.findFirst({
+    where: eq(files.id, current.avatarFileId),
+    columns: { bucketKey: true },
+  })
+  if (oldFile) {
+    await deleteObject(oldFile.bucketKey)
+    await db.delete(files).where(eq(files.id, current.avatarFileId))
+  }
+
+  logger.info('Profile photo removed', { userId })
   return { ok: true, data: null }
 }
 

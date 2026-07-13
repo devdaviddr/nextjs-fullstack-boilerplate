@@ -38,6 +38,7 @@ export default async function SettingsPage() {
       id: session.user.id ?? '',
       name: session.user.name ?? null,
       email: session.user.email ?? '',
+      image: session.user.image ?? null,
       roles: session.user.roles ?? [],
     },
   }
