@@ -30,6 +30,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # injected at runtime in the runner stage.
 RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
     AUTH_SECRET="placeholder-not-used-at-runtime" \
+    S3_ENDPOINT="http://localhost:9000" \
+    S3_ACCESS_KEY_ID="build" \
+    S3_SECRET_ACCESS_KEY="build" \
+    S3_BUCKET="build" \
     pnpm build
 
 # ---------- Runner ----------

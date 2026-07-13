@@ -49,6 +49,34 @@ const envSchema = z
       .string()
       .optional()
       .transform((v) => v === 'true'),
+
+    // --- File storage (S3-compatible — MinIO by default) -------------------
+    // Required: the docker-compose `minio` service ships working defaults in
+    // .env.example, so `cp .env.example .env` works with zero extra setup —
+    // same posture as DATABASE_URL.
+    S3_ENDPOINT: z.string().url('S3_ENDPOINT must be a valid URL'),
+    S3_ACCESS_KEY_ID: z.string().min(1, 'S3_ACCESS_KEY_ID is required'),
+    S3_SECRET_ACCESS_KEY: z.string().min(1, 'S3_SECRET_ACCESS_KEY is required'),
+    S3_BUCKET: z.string().min(1, 'S3_BUCKET is required'),
+    S3_REGION: z.string().min(1).optional().default('us-east-1'),
+    UPLOAD_MAX_SIZE_MB: z.coerce
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .default(10),
+    MAX_STORAGE_PER_USER_MB: z.coerce
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .default(500),
+    // Comma-separated MIME allow-list.
+    UPLOAD_ALLOWED_MIME_TYPES: z
+      .string()
+      .min(1)
+      .optional()
+      .default('image/png,image/jpeg,image/webp,image/gif,application/pdf'),
   })
   .superRefine((val, ctx) => {
     // If email is toggled on, a provider MUST be configured — fail fast at boot
