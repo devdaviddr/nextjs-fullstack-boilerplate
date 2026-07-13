@@ -9,23 +9,73 @@ A single Next.js 16 application (App Router) backed by PostgreSQL. Rendering is 
 ```mermaid
 flowchart TD
     Browser["Browser / installed PWA"]
-    SW["Service Worker<br/>(public/sw.js)"]
+    SW["Service Worker<br/>(offline + push)"]
     Proxy["Edge proxy<br/>(src/proxy.ts)"]
     RSC["App Router<br/>RSC + Server Actions"]
-    Auth["Auth.js v5<br/>Credentials + JWT"]
+    Auth["Auth.js v5<br/>Credentials + OAuth · JWT"]
+    OAuth["GitHub / Google<br/>(opt-in)"]
     Argon["Argon2id<br/>(password.ts)"]
-    DB["Drizzle ORM"]
+    Email["Email<br/>reset / verify (opt-in)"]
+    Push["Web Push<br/>(web-push, opt-in)"]
+    DB["Drizzle ORM<br/>+ adapter"]
     PG[("PostgreSQL 17")]
+    S3[("MinIO / S3")]
 
     Browser <-->|"cache-first assets<br/>network-only auth/API"| SW
+    SW <-->|"notifications"| Push
     Browser -->|request| Proxy
     Proxy -->|authorized?| RSC
     RSC --> Auth
+    Auth --> OAuth
     Auth --> Argon
+    RSC --> Email
+    RSC --> Push
     RSC --> DB
     Auth --> DB
     DB --> PG
+    RSC --> S3
 ```
+
+## Production container topology
+
+The production stack ([`docker-compose.prod.yml`](../docker-compose.prod.yml))
+is a private bridge network with **one public gateway** (`app`). Postgres and
+MinIO are never exposed; short-lived one-shot containers handle migrations and
+bucket setup, and two sidecars run [backups](backups.md).
+
+```text
+                              Internet (HTTPS)
+                                     │
+                          ┌──────────▼───────────┐
+                          │   Cloudflare Tunnel   │  outbound-only; no open ports
+                          └──────────┬───────────┘
+                                     │  :3000
+┌────────────────────────────────────────────────────────────────────────────┐
+│  docker-compose.prod.yml   (private bridge network)                          │
+│                                                                              │
+│                          ┌────────────────────┐                             │
+│                          │    app  (Next.js)  │   the only public gateway    │
+│                          └───────┬─────┬──────┘                             │
+│                        SQL       │     │      S3 API                         │
+│                  ┌───────────────┘     └───────────────┐                    │
+│          ┌───────▼────────┐                    ┌────────▼────────┐           │
+│          │  db  (PG 17)   │                    │ minio (objects) │           │
+│          │  vol: pgdata   │                    │ vol: miniodata  │           │
+│          └───▲───────▲────┘                    └───▲────────▲────┘           │
+│    one-shot  │       │ nightly pg_dump             │        │  mc mirror     │
+│  ┌───────────┴──┐ ┌──┴───────────┐        ┌────────┴─┐ ┌────┴──────────┐    │
+│  │   migrate    │ │  db-backup   │        │minio-init│ │ minio-backup  │    │
+│  │ (db:migrate) │ │  (nightly)   │        │ (bucket) │ │  (interval)   │    │
+│  └──────────────┘ └──────┬───────┘        └──────────┘ └──────┬────────┘    │
+│                          │                                    │             │
+│                          ▼                                    ▼             │
+│                  ./backups/postgres                    ./backups/minio      │
+│                  (host bind mount — see docs/backups.md; excluded from git) │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+Startup ordering is enforced with `depends_on` health/completion conditions:
+`db` healthy → `migrate` completes → `minio-init` completes → `app` starts.
 
 ## Request flow
 
@@ -38,18 +88,26 @@ flowchart TD
 
 Auth.js v5 is split across two runtimes so the edge middleware stays lightweight:
 
-| File                           | Runtime   | Responsibility                                                                                                        |
-| ------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/auth/config.ts`       | edge-safe | `pages`, session strategy, `authorized`/`jwt`/`session` callbacks. **No DB, no argon2.**                              |
-| `src/lib/auth/index.ts`        | Node      | Full `NextAuth()` with the Credentials provider (needs DB + argon2). Exports `handlers`, `auth`, `signIn`, `signOut`. |
-| `src/proxy.ts`                 | edge      | Imports only `config.ts`; enforces route protection + role gating.                                                    |
-| `src/lib/auth/rbac.ts`         | Node      | Server-side role guards: `requireRole` / `requireAnyRole` / `hasRole` (throw `ForbiddenError`).                       |
-| `src/lib/auth/client-rbac.tsx` | client    | `useRole()` hook + `<RequireRole>` for cosmetic gating (server checks stay authoritative).                            |
-| `src/lib/auth/invite.ts`       | Node      | Single-use invite tokens: mint / SHA-256 hash / time-safe verify (`node:crypto`).                                     |
+| File                           | Runtime   | Responsibility                                                                                                                                    |
+| ------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/auth/config.ts`       | edge-safe | `pages`, session strategy, `authorized`/`jwt`/`session` callbacks. **No DB, no argon2.**                                                          |
+| `src/lib/auth/index.ts`        | Node      | Full `NextAuth()` with the Credentials provider (needs DB + argon2). Exports `handlers`, `auth`, `signIn`, `signOut`.                             |
+| `src/proxy.ts`                 | edge      | Imports only `config.ts`; enforces route protection + role gating.                                                                                |
+| `src/lib/auth/rbac.ts`         | Node      | Server-side role guards: `requireRole` / `requireAnyRole` / `hasRole` (throw `ForbiddenError`).                                                   |
+| `src/lib/auth/client-rbac.tsx` | client    | `useRole()` hook + `<RequireRole>` for cosmetic gating (server checks stay authoritative).                                                        |
+| `src/lib/auth/providers.ts`    | Node      | Which OAuth providers are configured (`isGithubConfigured` / `isGoogleConfigured`) — booleans only, never secrets. See [OAuth](oauth.md).         |
+| `src/lib/auth/tokens.ts`       | Node      | Purpose-agnostic single-use hashed tokens (mint / SHA-256 / time-safe verify). Backs invites, [password reset, and email verification](email.md). |
+| `src/lib/auth/roles.ts`        | Node      | Bootstrap role for new OAuth users (first user → `admin`, rest → `member`), via `events.createUser`.                                              |
+| `src/lib/push/`                | Node      | `web-push` wrapper (`sendPushNotification` / `notifyRole`) — safe no-op when VAPID is unset. See [Features → Web Push](features.md).              |
 
 Key properties:
 
-- **JWT sessions** — required for the Credentials provider; the user id is attached in the `jwt` callback and surfaced in `session`.
+- **JWT sessions kept even with the OAuth adapter** — Auth.js would default to
+  database sessions once a `DrizzleAdapter` is present; the config keeps
+  `strategy: 'jwt'` explicitly so `proxy.ts`'s edge route protection stays a
+  zero-DB-round-trip JWT check. The adapter lives only in the Node config,
+  never the edge one. See [OAuth](oauth.md).
+- **User id on the JWT** — attached in the `jwt` callback and surfaced in `session`.
 - **Roles on the token** — the `jwt` callback attaches a `roles: string[]` claim (self-healing: a stale token missing it re-fetches once and back-fills). `proxy.ts` gates route prefixes on it via `ROLE_REQUIRED`; server actions assert with `requireRole`. See [Features → Access control](features.md#access-control-rbac).
 - **Argon2id hashing** (`src/lib/auth/password.ts`) with OWASP parameters.
 - **User-enumeration resistance** — `fakeVerifyPassword` runs a dummy verify when no user matches, equalizing response timing.
@@ -117,7 +175,8 @@ session strategy to `"database"`, and the existing `sessions` table is used.
 ```
 src/
 ├── app/
-│   ├── (auth)/                  # login + register (shared centered layout)
+│   ├── (auth)/                  # login · register · forgot/reset-password · verify-email
+│   │                           #   (shared centered layout + theme toggle)
 │   ├── (dashboard)/             # protected area, wrapped in the app shell
 │   │   ├── layout.tsx           #   auth guard + <SessionProvider> + <AppShell>
 │   │   ├── dashboard/           #   /dashboard
@@ -133,17 +192,23 @@ src/
 │   ├── error.tsx · global-error.tsx · not-found.tsx
 │   └── layout.tsx · page.tsx · globals.css
 ├── components/
-│   ├── auth/                    # forms, submit button, sign-out, avatar-upload
+│   ├── auth/                    # forms · avatar-upload · connected-accounts · oauth-buttons
+│   │                           #   · verification-banner · forgot/reset-password forms
 │   ├── files/                   # "My Files" panel (upload/list/download/delete)
+│   ├── push/                    # notifications-panel (subscribe/unsubscribe)
 │   ├── pwa/                     # service-worker register, install prompt
-│   ├── shell/                   # app-shell, sidebar-nav
+│   ├── shell/                   # app-shell (brand + theme toggle), sidebar-nav
+│   ├── theme/                   # theme-provider · theme-toggle (next-themes)
 │   └── ui/                      # shadcn/ui primitives
 ├── db/
 │   ├── schema.ts · index.ts · migrate.ts · seed.ts
 ├── lib/
-│   ├── auth/                    # config · index · password · actions · admin-actions
-│   │                           #   · session · form-state · rbac · client-rbac · invite
+│   ├── auth/                    # config · index · password · actions · admin-actions · session
+│   │                           #   · form-state · rbac · client-rbac · invite · providers · roles
+│   │                           #   · tokens · verification-tokens · recovery-actions
+│   │                           #   · account-actions · email-verification · verification-guard
 │   ├── email/                   # index (gate + sendEmail) · transport (SMTP) · templates
+│   ├── push/                    # index (web-push send + prune) · actions (save/remove sub)
 │   ├── storage/                 # client (S3/MinIO) · validation · actions (upload/list/delete)
 │   ├── shell/nav.ts            # sidebar navigation config
 │   ├── validations/            # Zod schemas
@@ -157,4 +222,9 @@ src/
 - **TypeScript 5.9, ESLint 9** (not the newest majors) — chosen for full toolchain compatibility over bleeding edge.
 - **Turbopack everywhere** (dev + build) — the PWA is hand-rolled to avoid a Webpack-only service-worker plugin.
 - **`proxy.ts`, not `middleware.ts`** — Next 16 renamed the convention; the old name is deprecated.
-- **Credentials-only auth, adapter-ready schema** — OAuth can be added without a migration rewrite.
+- **Credentials + OAuth, one identity system** — GitHub/Google run through the
+  same Auth.js instance and `users` table as the Credentials provider (not a
+  second auth system), with JWT sessions kept. See [OAuth](oauth.md).
+- **Everything external is opt-in** — [OAuth](oauth.md), [email](email.md)
+  (reset/verify), and Web Push are each inert until their env vars are set, so a
+  fork boots zero-config and turns features on as needed.

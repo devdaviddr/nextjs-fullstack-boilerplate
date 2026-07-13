@@ -21,12 +21,14 @@ A production-grade starting point for full-stack web apps — authentication, da
 
 An opinionated, batteries-included template built on **Next.js 16** (App Router, RSC, Server Actions) with:
 
-- 🔐 **Email + password auth** via Auth.js v5 — Argon2id hashing, JWT sessions, edge-protected routes
+- 🔐 **Auth** via Auth.js v5 — email + password (Argon2id, JWT), plus opt-in **[GitHub & Google OAuth](docs/oauth.md)**; edge-protected routes
+- ✉️ **[Password reset & email verification](docs/email.md)** — single-use hashed tokens, anti-enumeration, optional verify soft gate (opt-in with SMTP)
 - 🧑‍⚖️ **Role-based access control** — roles on the JWT, edge + server guards, admin user-management, invite-based account claim
-- ✉️ **Optional email** — toggleable, provider-agnostic SMTP delivery (off by default), wired to invite links
-- 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema, committed migrations
+- 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema (see the **[ERD](docs/database.md#entity-relationship-diagram)**), committed migrations
 - 📁 **File uploads** — self-hosted, S3-compatible object storage (MinIO), size/type validation, per-user quota
-- 📱 **PWA + responsive app shell** — installable, offline-resilient, mobile-to-desktop layout
+- 📱 **PWA + responsive app shell** — installable, offline-resilient, **[Web Push](docs/features.md)**, light/dark theming, mobile-to-desktop layout
+- 🔎 **SEO** — OpenGraph/Twitter cards, `robots.txt` + `sitemap.xml`
+- 💾 **[Automated backups](docs/backups.md)** — nightly Postgres + MinIO, doctor script, tested restore runbook
 - 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
 - 🐳 **Docker + CI** — multi-stage image, GitHub Actions pipeline
 - 🛡️ **Strict TypeScript**, ESLint, Prettier, and pre-commit hooks
@@ -64,7 +66,9 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | ------------------------------------------- | ------------------------------------------------------------ |
 | 📋 **[Features](docs/features.md)**         | Complete feature list and what's included                    |
 | 🏛️ **[Architecture](docs/architecture.md)** | Request flow, auth design, security model, project structure |
-| 🗄️ **[Database](docs/database.md)**         | Schema, migrations, Drizzle workflow, seeding                |
+| 🗄️ **[Database](docs/database.md)**         | ERD, schema, migrations, Drizzle workflow, seeding           |
+| 🔑 **[OAuth](docs/oauth.md)**               | GitHub + Google sign-in — setup, callback URLs, linking      |
+| ✉️ **[Email](docs/email.md)**               | SMTP setup, password reset, email verification, soft gate    |
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
 | 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |

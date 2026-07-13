@@ -8,6 +8,23 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-07-13
+
+### Documentation
+
+- Brought all docs current with the features shipped in 0.8.0–0.13.0 and added
+  diagrams + setup guides:
+  - **ERD** (Mermaid) of the full schema in [`docs/database.md`](docs/database.md),
+    and a refreshed schema table (accounts/verification_tokens now in use;
+    `push_subscriptions` added).
+  - **ASCII container-topology diagram** of the production stack in
+    [`docs/architecture.md`](docs/architecture.md); updated the overview diagram,
+    auth-module table, and project tree for OAuth/email/push.
+  - New **[OAuth setup guide](docs/oauth.md)** (GitHub + Google) and
+    **[Email guide](docs/email.md)** (SMTP setup, password reset, verification,
+    soft gate).
+  - `README` "What it is" + Documentation index updated to link every guide.
+
 ## [0.13.0] - 2026-07-13
 
 ### Added
