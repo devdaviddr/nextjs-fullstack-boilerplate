@@ -177,7 +177,12 @@ export function AppShell({
                 {avatarImage && (
                   <AvatarImage src={avatarImage} alt={user.name ?? ''} />
                 )}
-                <AvatarFallback className="text-xs">
+                {/* Delay the fallback when a photo is expected so a cached
+                    load doesn't flash initials first (see avatar-upload). */}
+                <AvatarFallback
+                  delayMs={avatarImage ? 500 : 0}
+                  className="text-xs"
+                >
                   {initials(user.name)}
                 </AvatarFallback>
               </Avatar>

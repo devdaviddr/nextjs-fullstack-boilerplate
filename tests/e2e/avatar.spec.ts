@@ -67,6 +67,41 @@ test('upload, replace, and remove a profile photo', async ({ page }) => {
   expect(removedRes.status()).toBe(404)
 })
 
+test('serves the avatar with cacheable, immutable headers (no flash on refresh)', async ({
+  page,
+}) => {
+  const email = `avatar-cache+${Date.now()}@example.com`
+
+  await page.goto('/register')
+  await page.getByLabel('Name').fill('Cache Tester')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByLabel('Confirm password').fill('Password123')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+
+  await page.goto('/settings')
+  await page.getByLabel('Upload profile photo').setInputFiles({
+    name: 'avatar.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(PNG_BASE64, 'base64'),
+  })
+  const img = page.getByRole('main').locator('img[alt="Cache Tester"]').first()
+  await expect(img).toBeVisible()
+  const href = await img.getAttribute('src')
+  expect(href).toBeTruthy()
+
+  // Unlike general file downloads (no-store), the avatar is privately
+  // cacheable and immutable — this is what stops the browser re-fetching it
+  // on every refresh and flashing the fallback initials.
+  const res = await page.request.get(href!)
+  expect(res.status()).toBe(200)
+  const cacheControl = res.headers()['cache-control']
+  expect(cacheControl).toContain('private')
+  expect(cacheControl).toContain('immutable')
+  expect(cacheControl).not.toContain('no-store')
+})
+
 test('rejects a non-image file with a clear error (PDF is fine for general uploads, not avatars)', async ({
   page,
 }) => {

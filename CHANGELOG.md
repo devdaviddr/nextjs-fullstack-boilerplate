@@ -8,7 +8,20 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.7.1] - 2026-07-13
+## [0.7.2] - 2026-07-13
+
+### Fixed
+
+- Profile photos no longer flash the fallback initials on every page refresh.
+  Two causes: the download route sent `Cache-Control: no-store` for all files
+  (so the avatar was re-fetched over the network on every load), and Radix's
+  `Avatar` shows the fallback until the `<img>` finishes loading. Avatars are
+  now served `private, max-age=…, immutable` — safe because each avatar has a
+  unique, immutable URL (a fresh file id on every change; the old one is
+  deleted) — while general file downloads keep the stricter `no-store`. The
+  `AvatarFallback` also gets a short `delayMs` when a photo is expected, so a
+  fast/cached load renders the image directly instead of briefly flashing
+  initials.
 
 ### Fixed
 
@@ -219,7 +232,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...v0.6.0

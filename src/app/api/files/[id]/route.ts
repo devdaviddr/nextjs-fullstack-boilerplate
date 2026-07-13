@@ -53,12 +53,25 @@ export async function GET(
   )
   const asciiName = asciiFilename(row.originalName)
 
+  // General file downloads stay `no-store` (don't cache potentially sensitive
+  // documents on shared devices). A profile photo is the exception: it's
+  // rendered in an `<img>` on every page, and each avatar has a unique,
+  // immutable URL (a fresh file id on every change; the old one is deleted),
+  // so it's safe — and standard — to cache privately. This is what removes
+  // the initials-flash-on-refresh. We detect "is the avatar" from the
+  // session's `image` (set to `/api/files/{avatarFileId}`), so there's no
+  // extra DB query.
+  const isAvatar = session.user.image === `/api/files/${id}`
+  const cacheControl = isAvatar
+    ? 'private, max-age=86400, immutable'
+    : 'private, no-store'
+
   return new NextResponse(body, {
     headers: {
       'Content-Type': contentType ?? row.mimeType,
       ...(contentLength ? { 'Content-Length': String(contentLength) } : {}),
       'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
-      'Cache-Control': 'private, no-store',
+      'Cache-Control': cacheControl,
     },
   })
 }

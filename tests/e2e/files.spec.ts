@@ -41,6 +41,9 @@ test('upload, list, download, and delete a file', async ({ page }) => {
   const downloadRes = await page.request.get(href!)
   expect(downloadRes.ok()).toBeTruthy()
   expect(downloadRes.headers()['content-type']).toContain('image/png')
+  // General file downloads stay uncached (only avatars are cacheable — see
+  // avatar.spec.ts). Guards the avatar-scoped cache-control logic.
+  expect(downloadRes.headers()['cache-control']).toContain('no-store')
 
   // Delete: confirm via the dialog, file disappears from the list.
   await page.getByRole('button', { name: `Delete ${fileName}` }).click()

@@ -88,7 +88,12 @@ export function AvatarUpload({ name, image }: AvatarUploadProps) {
           {currentImage && (
             <AvatarImage src={currentImage} alt={name ?? 'Profile photo'} />
           )}
-          <AvatarFallback className="text-lg">{initials(name)}</AvatarFallback>
+          {/* When an image is expected, hold the fallback back briefly so a
+              fast (cached) load shows the photo directly instead of flashing
+              initials first. With no image, show initials immediately. */}
+          <AvatarFallback delayMs={currentImage ? 500 : 0} className="text-lg">
+            {initials(name)}
+          </AvatarFallback>
         </Avatar>
         {isUploading && (
           <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-full">
