@@ -29,6 +29,15 @@ const envSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
 
+    // --- OAuth providers (opt-in) ------------------------------------------
+    // Each provider is enabled only when BOTH its id and secret are set (see
+    // isGithubConfigured/isGoogleConfigured). Absent → the provider button is
+    // hidden and nothing changes for credentials-only deployments.
+    AUTH_GITHUB_ID: optionalStr,
+    AUTH_GITHUB_SECRET: optionalStr,
+    AUTH_GOOGLE_ID: optionalStr,
+    AUTH_GOOGLE_SECRET: optionalStr,
+
     // --- Public app URL ----------------------------------------------------
     // Canonical, publicly-reachable origin of this deployment. Used for
     // `metadataBase` (so OpenGraph/Twitter image URLs resolve absolutely) and

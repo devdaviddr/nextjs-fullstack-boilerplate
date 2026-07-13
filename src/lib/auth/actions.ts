@@ -185,6 +185,17 @@ export async function signOutAction() {
   await signOut({ redirectTo: '/login' })
 }
 
+/**
+ * Start an OAuth sign-in. Driven from the login page's provider buttons via a
+ * hidden `provider` field. `signIn` completes by throwing a redirect (to the
+ * provider, then back to `/dashboard`), so there's nothing to return.
+ */
+export async function oauthSignInAction(formData: FormData) {
+  const provider = String(formData.get('provider'))
+  if (provider !== 'github' && provider !== 'google') return
+  await signIn(provider, { redirectTo: '/dashboard' })
+}
+
 /** Authenticate an existing user with email + password. */
 export async function loginAction(
   _prev: AuthFormState,

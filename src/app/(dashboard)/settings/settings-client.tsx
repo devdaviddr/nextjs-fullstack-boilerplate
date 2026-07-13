@@ -2,7 +2,9 @@
 
 import { CurrentUserCard } from '@/components/auth/current-user-card'
 import { AdminPanel } from '@/components/auth/admin-panel'
+import { ConnectedAccounts } from '@/components/auth/connected-accounts'
 import { FilesPanel } from '@/components/files/files-panel'
+import type { LinkedAccountsState } from '@/lib/auth/account-actions'
 import type { FileSummary } from '@/lib/storage/actions'
 
 interface SettingsClientProps {
@@ -25,6 +27,7 @@ interface SettingsClientProps {
   }>
   roles: Array<{ id: string; name: string; description: string | null }>
   files: FileSummary[]
+  linkedAccounts: LinkedAccountsState
   isAdmin: boolean
 }
 
@@ -33,6 +36,7 @@ export function SettingsClient({
   users,
   roles,
   files,
+  linkedAccounts,
   isAdmin,
 }: SettingsClientProps) {
   const formattedRoles = roles.map((r) => ({ id: r.id, name: r.name }))
@@ -44,6 +48,8 @@ export function SettingsClient({
       <CurrentUserCard user={session.user} allRoles={formattedRoles} />
 
       <FilesPanel initialFiles={files} />
+
+      <ConnectedAccounts state={linkedAccounts} />
 
       {/* Server-authoritative gate — the admin server actions also enforce it. */}
       {isAdmin && (
