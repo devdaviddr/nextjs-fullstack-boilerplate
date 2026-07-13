@@ -54,6 +54,10 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app?sslmode=disable
       AUTH_SECRET: ci-test-secret-not-for-production-use-only
       AUTH_TRUST_HOST: 'true'
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET: app-files
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -62,6 +66,26 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # MinIO can't be a `services:` container — that block only supports
+      # `image`/`env`/`ports`, never a custom command, and the minio/minio
+      # image needs `server /data` args to actually run (bare, it just prints
+      # help and exits). Started explicitly instead, mirroring
+      # docker-compose.yml's minio + minio-init services.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/live && break
+            sleep 1
+          done
+      - name: Create MinIO bucket
+        run: |
+          docker run --rm --network host minio/mc /bin/sh -c "
+            mc alias set local http://localhost:9000 minioadmin minioadmin &&
+            mc mb --ignore-existing local/app-files
+          "
       - name: Apply database migrations
         run: pnpm db:migrate
       - name: Seed (demo admin user + roles, used by E2E)
