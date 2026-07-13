@@ -123,7 +123,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] File uploads & object storage — self-hosted MinIO, per-user quota
 - [x] Dark-mode toggle & theming
 - [x] SEO & OpenGraph metadata — shareable link-preview cards
-- [ ] OAuth providers (GitHub, Google)
+- [x] OAuth providers (GitHub, Google)
 - [ ] Email verification & password reset
 - [ ] Web Push notifications
 - [ ] Automated backups — nightly Postgres + MinIO, documented restore path

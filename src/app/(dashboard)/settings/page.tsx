@@ -6,6 +6,7 @@ import {
   getAllRoles,
   type UserWithRoles,
 } from '@/lib/auth/admin-actions'
+import { getLinkedAccounts } from '@/lib/auth/account-actions'
 import { listMyFiles } from '@/lib/storage/actions'
 import { SettingsClient } from './settings-client'
 
@@ -20,7 +21,7 @@ export default async function SettingsPage() {
   const isAdmin = (session.user.roles ?? []).includes('admin')
 
   // Fetch data in parallel
-  const [users, roles, files] = await Promise.all([
+  const [users, roles, files, linkedAccounts] = await Promise.all([
     isAdmin ? getAllUsersWithRoles() : Promise.resolve([] as UserWithRoles[]),
     isAdmin
       ? getAllRoles()
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
           [] as Array<{ id: string; name: string; description: string | null }>,
         ),
     listMyFiles(),
+    getLinkedAccounts(),
   ])
 
   // Ensure user properties are never undefined (they're required by auth)
@@ -49,6 +51,7 @@ export default async function SettingsPage() {
       users={users ?? []}
       roles={roles ?? []}
       files={files ?? []}
+      linkedAccounts={linkedAccounts}
       isAdmin={isAdmin}
     />
   )

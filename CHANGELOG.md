@@ -8,6 +8,25 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-13
+
+### Added
+
+- OAuth providers — GitHub & Google sign-in
+  ([spec 0010](specs/0010-oauth-providers.md)). Wires the Auth.js Drizzle
+  adapter into the Node auth config (the schema was already adapter-compatible)
+  while keeping `session.strategy: 'jwt'`, so `proxy.ts`'s edge route
+  protection still reads the JWT with zero DB round-trips. Each provider is
+  independently opt-in via env vars (`AUTH_GITHUB_ID`/`_SECRET`,
+  `AUTH_GOOGLE_ID`/`_SECRET`); with none set, nothing changes for
+  credentials-only deployments. The login page shows "Continue with …" buttons
+  only for configured providers. New OAuth users get a bootstrap role (first
+  user → `admin`, rest → `member`) via `events.createUser`. Email-match
+  auto-linking is **off** (an account-takeover vector): a matching email shows
+  a "sign in and link from Settings" message instead. Settings gains a
+  "Connected accounts" panel to link/unlink providers, with a server-side
+  guard against unlinking your only remaining sign-in method.
+
 ## [0.9.1] - 2026-07-13
 
 ### Changed
