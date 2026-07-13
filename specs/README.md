@@ -1,6 +1,6 @@
 # Specs — Spec-Driven Development
 
-[← Back to project README](../README.md)
+[← Back to README](../README.md)
 
 This project uses **spec-driven development (SDD)**: non-trivial changes start
 with a short written spec that captures the _what_ and _why_ before the _how_.
@@ -33,7 +33,8 @@ Proposed ──▶ Accepted ──▶ In Progress ──▶ Shipped
 1. Copy [`TEMPLATE.md`](TEMPLATE.md) to `NNNN-slug.md` (next free 4-digit id).
 2. Fill it in; open it for review as `Proposed`.
 3. On agreement, set `Accepted` and implement — ideally on a `feature/<slug>`
-   branch (see the [gitflow workflow](../CONTRIBUTING.md)).
+   branch (see the [contributing guide](../CONTRIBUTING.md) for the trunk-based
+   workflow).
 4. On release, set `Shipped`, fill `release:`, check the acceptance criteria,
    and add the matching [`CHANGELOG.md`](../CHANGELOG.md) entry.
 

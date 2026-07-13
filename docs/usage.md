@@ -12,36 +12,46 @@
 
 Copy `.env.example` → `.env`. All variables are validated at boot in `src/lib/env.ts` — a missing or malformed value fails fast with a readable error.
 
-| Variable                    | Required | Notes                                                       |
-| --------------------------- | :------: | ----------------------------------------------------------- |
-| `DATABASE_URL`              |    ✅    | Postgres connection string                                  |
-| `S3_ENDPOINT`               |    ✅    | S3-compatible endpoint (MinIO by default)                   |
-| `S3_ACCESS_KEY_ID`          |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev |
-| `S3_SECRET_ACCESS_KEY`      |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev |
-| `S3_BUCKET`                 |    ✅    | Bucket name — auto-created by `minio-init`                  |
-| `S3_REGION`                 |    –     | Defaults to `us-east-1` (MinIO ignores region)              |
-| `UPLOAD_MAX_SIZE_MB`        |    –     | Per-file size cap. Default `10`                             |
-| `MAX_STORAGE_PER_USER_MB`   |    –     | Per-user quota. Default `500`                               |
-| `UPLOAD_ALLOWED_MIME_TYPES` |    –     | Comma-separated allow-list. Default images + PDF            |
-| `AUTH_SECRET`               |    ✅    | `npx auth secret` — unique per environment, never reuse     |
-| `AUTH_URL`                  |    –     | Canonical URL; set in production                            |
-| `AUTH_TRUST_HOST`           |    –     | `true` behind a trusted proxy / in Docker                   |
-| `NODE_ENV`                  |    –     | `development` \| `test` \| `production`                     |
-| `LOG_LEVEL`                 |    –     | `debug` \| `info` \| `warn` \| `error`                      |
-| `RATE_LIMIT_DISABLED`       |    –     | `true` to disable the in-memory auth rate limiter           |
-| `EMAIL_ENABLED`             |    –     | `true` to turn on email; requires the SMTP vars below       |
-| `EMAIL_FROM`                |    †     | From address (required when `EMAIL_ENABLED=true`)           |
-| `SMTP_HOST`                 |    †     | SMTP host (required when `EMAIL_ENABLED=true`)              |
-| `SMTP_PORT`                 |    †     | SMTP port, e.g. `587` or `465` (required when enabled)      |
-| `SMTP_USER`                 |    –     | SMTP username (if the server requires auth)                 |
-| `SMTP_PASSWORD`             |    –     | SMTP password (if the server requires auth)                 |
-| `SMTP_SECURE`               |    –     | `true` for implicit TLS; auto-true on port `465`            |
+| Variable                     | Required | Notes                                                                                                             |
+| ---------------------------- | :------: | ----------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`               |    ✅    | Postgres connection string                                                                                        |
+| `S3_ENDPOINT`                |    ✅    | S3-compatible endpoint (MinIO by default)                                                                         |
+| `S3_ACCESS_KEY_ID`           |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev                                                       |
+| `S3_SECRET_ACCESS_KEY`       |    ✅    | Matches `.env.example` / `docker-compose.yml` for local dev                                                       |
+| `S3_BUCKET`                  |    ✅    | Bucket name — auto-created by `minio-init`                                                                        |
+| `S3_REGION`                  |    –     | Defaults to `us-east-1` (MinIO ignores region)                                                                    |
+| `UPLOAD_MAX_SIZE_MB`         |    –     | Per-file size cap. Default `10`                                                                                   |
+| `MAX_STORAGE_PER_USER_MB`    |    –     | Per-user quota. Default `500`                                                                                     |
+| `UPLOAD_ALLOWED_MIME_TYPES`  |    –     | Comma-separated allow-list. Default images + PDF                                                                  |
+| `AUTH_SECRET`                |    ✅    | `npx auth secret` — unique per environment, never reuse                                                           |
+| `AUTH_URL`                   |    –     | Canonical auth URL; set in production                                                                             |
+| `AUTH_TRUST_HOST`            |    –     | `true` behind a trusted proxy / in Docker                                                                         |
+| `AUTH_GITHUB_ID` / `_SECRET` |    –     | Enables GitHub sign-in when both set — see [OAuth](oauth.md)                                                      |
+| `AUTH_GOOGLE_ID` / `_SECRET` |    –     | Enables Google sign-in when both set — see [OAuth](oauth.md)                                                      |
+| `APP_URL`                    |    –     | Public origin for OG/`metadataBase`, `robots`/`sitemap`, and OAuth callback URLs. Default `http://localhost:3000` |
+| `NODE_ENV`                   |    –     | `development` \| `test` \| `production`                                                                           |
+| `LOG_LEVEL`                  |    –     | `debug` \| `info` \| `warn` \| `error`                                                                            |
+| `RATE_LIMIT_DISABLED`        |    –     | `true` to disable the in-memory auth rate limiter                                                                 |
+| `EMAIL_ENABLED`              |    –     | `true` to turn on email; requires the SMTP vars below                                                             |
+| `EMAIL_FROM`                 |    †     | From address (required when `EMAIL_ENABLED=true`)                                                                 |
+| `SMTP_HOST`                  |    †     | SMTP host (required when `EMAIL_ENABLED=true`)                                                                    |
+| `SMTP_PORT`                  |    †     | SMTP port, e.g. `587` or `465` (required when enabled)                                                            |
+| `SMTP_USER`                  |    –     | SMTP username (if the server requires auth)                                                                       |
+| `SMTP_PASSWORD`              |    –     | SMTP password (if the server requires auth)                                                                       |
+| `SMTP_SECURE`                |    –     | `true` for implicit TLS; auto-true on port `465`                                                                  |
+| `REQUIRE_EMAIL_VERIFICATION` |    –     | `true` soft-gates unverified users (only with email on) — see [Email](email.md)                                   |
+| `VAPID_PUBLIC_KEY`           |    –     | Web Push — enabled only when all three VAPID vars are set                                                         |
+| `VAPID_PRIVATE_KEY`          |    –     | Web Push private key (server-only)                                                                                |
+| `VAPID_SUBJECT`              |    –     | Web Push contact URL, e.g. `mailto:you@example.com`                                                               |
 
 † Required only when `EMAIL_ENABLED=true`. Setting the toggle without a provider
 fails fast at boot. SMTP is provider-agnostic — Resend, SendGrid, Mailgun, SES,
-Postmark and Gmail all expose SMTP credentials. See
-[Features → Email](features.md#email-optional). S3 vars are always required —
-see [Features → File uploads](features.md#file-uploads).
+Postmark and Gmail all expose SMTP credentials. See [Email](email.md). S3 vars
+are always required — see [Features → File uploads](features.md#file-uploads).
+
+> Production-compose-only backup settings (`BACKUP_RETENTION_DAYS`,
+> `BACKUP_INTERVAL_SECONDS`, `OFFSITE_BACKUP_*`) are consumed by the backup
+> sidecars, not the app — see [Backups](backups.md).
 
 ## Scripts
 
@@ -55,9 +65,10 @@ see [Features → File uploads](features.md#file-uploads).
 | `pnpm test` · `pnpm test:watch` · `pnpm test:coverage`                  | Vitest units                           |
 | `pnpm test:e2e` · `pnpm test:e2e:ui`                                    | Playwright E2E                         |
 | `pnpm db:generate` · `db:migrate` · `db:push` · `db:studio` · `db:seed` | Database (see [Database](database.md)) |
-| `pnpm gen:icons`                                                        | Regenerate PWA icons                   |
+| `pnpm gen:icons` · `pnpm gen:og`                                        | Regenerate PWA icons · OG share image  |
 | `pnpm docker:db`                                                        | Start the local Postgres container     |
 | `pnpm docker:minio`                                                     | Start local MinIO + bucket init        |
+| `pnpm docker:mail`                                                      | Start local Mailpit (email catcher)    |
 
 ## Testing
 
@@ -67,13 +78,23 @@ pnpm test:coverage   # units with coverage
 pnpm test:e2e        # E2E (needs a migrated DB + running/built app)
 ```
 
-- **Unit** tests live in `tests/unit/` (password hashing, validation schemas, upload validation). The `server-only` guard is stubbed for the test runner (see `vitest.config.ts`).
-- **E2E** tests live in `tests/e2e/` (auth flow, protected-route redirects, PWA manifest/SW/offline, file upload/download/delete, a11y). Playwright boots `pnpm dev` locally and `pnpm start` in CI.
+- **Unit** tests live in `tests/unit/` — password hashing, validation schemas,
+  upload validation, rate limiting, single-use tokens, RBAC, OAuth config, the
+  email soft-gate guard, and Web Push send/prune. The `server-only` guard is
+  stubbed for the test runner (see `vitest.config.ts`).
+- **E2E** tests live in `tests/e2e/` — auth flows, protected-route redirects,
+  RBAC, file upload/download/delete, avatars, PWA (manifest/SW/offline), SEO
+  (robots/sitemap/OG), a11y (axe), and the full email reset/verification
+  round-trips against Mailpit (`email-flow.spec.ts`, self-skips if Mailpit is
+  down). Each test uses a unique client IP to isolate rate-limit buckets
+  (`tests/e2e/fixtures.ts`), and a `globalSetup` seeds the demo admin. Playwright
+  boots `pnpm dev` locally and `pnpm start` in CI.
 
-Full green run against a live database + object store:
+Full green run against a live database, object store, and mail catcher:
 
 ```bash
-pnpm docker:db && pnpm docker:minio && pnpm db:migrate && pnpm build && pnpm test:e2e
+pnpm docker:db && pnpm docker:minio && pnpm docker:mail && \
+  pnpm db:migrate && pnpm build && pnpm test:e2e
 ```
 
 ## Docker
@@ -103,18 +124,19 @@ Husky installs a `pre-commit` hook that runs **lint-staged** (ESLint + Prettier 
 `.github/workflows/ci.yml` runs on push/PR to `main`:
 
 1. **Quality** — install, format check, lint, typecheck, unit tests (coverage).
-2. **E2E** — spins up a Postgres service, migrates, builds, runs Playwright.
+2. **E2E** — starts Postgres, MinIO, and Mailpit; migrates, seeds, builds, and
+   runs Playwright.
 3. **Docker** — builds the production image with layer caching.
 
 ## Extending
 
 | Task                        | How                                                                                                                            |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Add a protected route       | Create a page under `src/app/(dashboard)/`, add its prefix to `PROTECTED_PREFIXES` in `src/lib/auth/config.ts`                 |
+| Add a protected route       | Create a page under `src/app/(dashboard)/`, add its prefix to `PROTECTED_PREFIXES` in `src/proxy.ts`                           |
 | Add a sidebar link          | Add `{ title, href, icon }` to `src/lib/shell/nav.ts`                                                                          |
 | Add a table                 | Edit `src/db/schema.ts`, then `pnpm db:generate && pnpm db:migrate`                                                            |
 | Add a shadcn component      | `pnpm dlx shadcn@latest add <name>`                                                                                            |
-| Add OAuth                   | Enable `DrizzleAdapter(db)` and add providers in `src/lib/auth/index.ts` (schema is adapter-ready)                             |
+| Add an OAuth provider       | GitHub + Google ship; add another in `src/lib/auth/index.ts` with its `AUTH_<PROVIDER>_*` env vars — see [OAuth](oauth.md)     |
 | Gate a route by role        | Add a prefix → roles entry to `ROLE_REQUIRED` in `src/proxy.ts`; assert `requireRole('admin')` in the action                   |
 | Add a role                  | Insert into the `roles` table (see `src/db/seed.ts`); assign via the Settings admin panel or `assignRoles`                     |
 | Enable email                | Set `EMAIL_ENABLED=true` + the `SMTP_*` vars in `.env`; templates live in `src/lib/email/templates.ts`                         |

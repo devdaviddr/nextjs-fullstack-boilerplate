@@ -23,7 +23,7 @@ Three on-ramps, all converging on the same runtime:
 
 ## How it works
 
-```
+```text
 User ──HTTPS──▶  Cloudflare edge  ◀══ outbound tunnel ══  cloudflared ──▶ app:3000
                  (terminates TLS)                          (in Docker)
 ```
@@ -36,7 +36,8 @@ ports are opened on your host. (Deeper walkthrough:
 
 ## Prerequisites
 
-- Docker + Docker Compose (v2.24+ for the `!reset` override).
+- Docker + Docker Compose (v2.24+ — the deploy compose files use a newer
+  Compose merge feature).
 - A `.env` with at least `AUTH_SECRET` and `DATABASE_URL` (see [`.env.example`](../.env.example)).
 - For named tunnels: a domain on Cloudflare and (for the automated path) a
   scoped API token — **Account → Cloudflare Tunnel: Edit**, **Zone → DNS: Edit**.

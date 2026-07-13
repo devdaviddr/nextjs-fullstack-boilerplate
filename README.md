@@ -26,7 +26,7 @@ An opinionated, batteries-included template built on **Next.js 16** (App Router,
 - 🧑‍⚖️ **Role-based access control** — roles on the JWT, edge + server guards, admin user-management, invite-based account claim
 - 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema (see the **[ERD](docs/database.md#entity-relationship-diagram)**), committed migrations
 - 📁 **File uploads** — self-hosted, S3-compatible object storage (MinIO), size/type validation, per-user quota
-- 📱 **PWA + responsive app shell** — installable, offline-resilient, **[Web Push](docs/features.md)**, light/dark theming, mobile-to-desktop layout
+- 📱 **PWA + responsive app shell** — installable, offline-resilient, **[Web Push](docs/features.md#web-push-notifications-optional)**, light/dark theming, mobile-to-desktop layout
 - 🔎 **SEO** — OpenGraph/Twitter cards, `robots.txt` + `sitemap.xml`
 - 💾 **[Automated backups](docs/backups.md)** — nightly Postgres + MinIO, doctor script, tested restore runbook
 - 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
@@ -75,29 +75,57 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite   |
 | 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release       |
 
+## Scripts
+
+Full reference — see **[Usage & Development](docs/usage.md)** for details.
+
+| Command                              | What it does                                            |
+| ------------------------------------ | ------------------------------------------------------- |
+| `pnpm dev`                           | Start the dev server (Turbopack) at `localhost:3000`    |
+| `pnpm build` · `pnpm start`          | Production build · serve the build                      |
+| `pnpm lint` · `pnpm lint:fix`        | ESLint (check · autofix)                                |
+| `pnpm typecheck`                     | Type-check with `tsc --noEmit`                          |
+| `pnpm format` · `pnpm format:check`  | Prettier (write · check)                                |
+| `pnpm test` · `pnpm test:watch`      | Unit tests (Vitest) — run once · watch                  |
+| `pnpm test:coverage`                 | Unit tests with a coverage report                       |
+| `pnpm test:e2e` · `pnpm test:e2e:ui` | End-to-end tests (Playwright) — headless · UI runner    |
+| `pnpm db:generate`                   | Generate a SQL migration from the Drizzle schema        |
+| `pnpm db:migrate`                    | Apply pending migrations                                |
+| `pnpm db:push`                       | Push the schema without a migration file (prototyping)  |
+| `pnpm db:studio`                     | Open Drizzle Studio (visual DB browser)                 |
+| `pnpm db:seed`                       | Seed the demo admin + base roles (idempotent)           |
+| `pnpm docker:db`                     | Start local Postgres                                    |
+| `pnpm docker:minio`                  | Start local MinIO + one-shot bucket init                |
+| `pnpm docker:mail`                   | Start local Mailpit (email catcher for the email E2E)   |
+| `pnpm gen:icons` · `pnpm gen:og`     | Regenerate the PWA icon set · the OpenGraph share image |
+
+**Before pushing:** `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
+(add `pnpm test:e2e` for the full suite — it needs Postgres, MinIO, and, for the
+email round-trips, Mailpit).
+
 ## Tech stack
 
-| Layer      | Choice                                                      |
-| ---------- | ----------------------------------------------------------- |
-| Framework  | Next.js 16 · React 19 · TypeScript 5.9 (strict)             |
-| Auth       | Auth.js (NextAuth) v5 — Credentials + JWT, Argon2id, RBAC   |
-| Email      | Optional SMTP via nodemailer — off by default, any provider |
-| Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                   |
-| Storage    | MinIO (S3-compatible) · @aws-sdk/client-s3                  |
-| UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                  |
-| Validation | Zod (shared client/server schemas)                          |
-| Testing    | Vitest + Testing Library · Playwright                       |
-| Tooling    | ESLint (flat) · Prettier · Husky · lint-staged              |
-| Delivery   | Multi-stage Docker (standalone, non-root) · GitHub Actions  |
+| Layer      | Choice                                                                         |
+| ---------- | ------------------------------------------------------------------------------ |
+| Framework  | Next.js 16 · React 19 · TypeScript 5.9 (strict)                                |
+| Auth       | Auth.js (NextAuth) v5 — Credentials + GitHub/Google OAuth, JWT, Argon2id, RBAC |
+| Email      | Optional SMTP via nodemailer — off by default, any provider                    |
+| Database   | PostgreSQL 17 · Drizzle ORM + drizzle-kit                                      |
+| Storage    | MinIO (S3-compatible) · @aws-sdk/client-s3                                     |
+| UI         | Tailwind CSS v4 · shadcn/ui · lucide-react                                     |
+| Validation | Zod (shared client/server schemas)                                             |
+| Testing    | Vitest + Testing Library · Playwright (Mailpit for email)                      |
+| Tooling    | ESLint (flat) · Prettier · Husky · lint-staged                                 |
+| Delivery   | Multi-stage Docker (standalone, non-root) · GitHub Actions                     |
 
 ## Project structure
 
 ```
 src/
 ├── app/            # App Router: (auth) + (dashboard) groups, api/ (incl. files/[id]), PWA manifest & offline
-├── components/     # auth · files · pwa · shell · ui (shadcn)
+├── components/     # auth · files · push · pwa · shell · theme · ui (shadcn)
 ├── db/             # Drizzle schema, client, migrate & seed scripts
-├── lib/            # auth (config/actions/session/rbac/invite), email, storage (S3/MinIO), validations, env, shell nav
+├── lib/            # auth (config/actions/rbac/oauth/tokens/recovery), email, push, storage (S3/MinIO), validations, env
 └── proxy.ts        # edge route protection + role gating (Next 16 "proxy" convention)
 ```
 

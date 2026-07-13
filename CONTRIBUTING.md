@@ -9,7 +9,7 @@ See [docs/usage.md](docs/usage.md) for prerequisites and the local setup. In sho
 ```bash
 pnpm install
 cp .env.example .env && npx auth secret   # paste into .env
-pnpm docker:db && pnpm db:migrate && pnpm db:seed
+pnpm docker:db && pnpm docker:minio && pnpm db:migrate && pnpm db:seed
 pnpm dev
 ```
 
