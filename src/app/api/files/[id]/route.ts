@@ -7,6 +7,26 @@ import { getCurrentSession } from '@/lib/auth/session'
 import { getObjectStream } from '@/lib/storage/client'
 
 /**
+ * The quoted `filename="..."` parameter of a Content-Disposition header must
+ * be Latin-1 — HTTP header values are ByteStrings, so any character above
+ * 0xFF throws when the header is constructed. macOS screenshot names, for
+ * example, contain a U+202F narrow no-break space (before "am"/"pm"), which
+ * is exactly such a character. Strip anything outside printable ASCII, plus
+ * the quote/backslash that would break the quoted-string. Modern browsers use
+ * the RFC 5987 `filename*` (UTF-8, percent-encoded) below instead, which keeps
+ * the real, full-Unicode name — this is only the legacy fallback.
+ */
+function asciiFilename(name: string): string {
+  const cleaned = Array.from(name)
+    .filter((ch) => {
+      const code = ch.charCodeAt(0)
+      return code >= 0x20 && code <= 0x7e && ch !== '"' && ch !== '\\'
+    })
+    .join('')
+  return cleaned.length > 0 ? cleaned : 'download'
+}
+
+/**
  * Streams a stored file back to its owner. This is the ONLY path a browser
  * ever reaches MinIO through — MinIO itself has no public ingress (see
  * spec 0007) — so ownership is enforced here, not left to bucket ACLs.
@@ -31,13 +51,13 @@ export async function GET(
   const { body, contentType, contentLength } = await getObjectStream(
     row.bucketKey,
   )
-  const safeName = row.originalName.replace(/["\r\n]/g, '')
+  const asciiName = asciiFilename(row.originalName)
 
   return new NextResponse(body, {
     headers: {
       'Content-Type': contentType ?? row.mimeType,
       ...(contentLength ? { 'Content-Length': String(contentLength) } : {}),
-      'Content-Disposition': `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
+      'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
       'Cache-Control': 'private, no-store',
     },
   })

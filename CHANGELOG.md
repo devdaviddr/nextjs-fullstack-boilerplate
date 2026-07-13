@@ -8,7 +8,19 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.7.0] - 2026-07-13
+## [0.7.1] - 2026-07-13
+
+### Fixed
+
+- File downloads (`GET /api/files/[id]`) 500'd when the original filename
+  contained a character above U+00FF — e.g. the U+202F narrow no-break space
+  macOS puts in screenshot names (`Screenshot … 12.01.47 pm.png`). HTTP
+  header values are ByteStrings, so the raw name in the `Content-Disposition`
+  `filename="…"` fallback threw. The fallback is now stripped to printable
+  ASCII; the RFC 5987 `filename*=UTF-8''…` parameter (already present)
+  carries the real Unicode name for modern browsers. Existing avatars/files
+  affected by this display correctly on the next request — no re-upload
+  needed. Regression-tested with a macOS-screenshot-style filename.
 
 ### Added
 
@@ -207,7 +219,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   Tailwind CSS v4 + shadcn/ui, Vitest + Playwright, a multi-stage Docker image,
   and a GitHub Actions CI pipeline.
 
-[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/devdaviddr/nextjs-fullstack-boilerplate/compare/v0.5.1...v0.5.2
