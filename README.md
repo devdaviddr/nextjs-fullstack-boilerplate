@@ -121,7 +121,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] RBAC · invite-based account claim · optional email delivery
 - [x] Cloudflare Tunnel deployment
 - [x] File uploads & object storage — self-hosted MinIO, per-user quota
-- [ ] Dark-mode toggle & theming
+- [x] Dark-mode toggle & theming
 - [ ] SEO & OpenGraph metadata — shareable link-preview cards
 - [ ] OAuth providers (GitHub, Google)
 - [ ] Email verification & password reset

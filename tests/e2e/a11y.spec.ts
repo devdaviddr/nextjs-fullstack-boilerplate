@@ -59,6 +59,36 @@ test('settings admin panel has no detectable a11y violations', async ({
   expect(results.violations).toEqual([])
 })
 
+test('theme toggle is keyboard-operable, announces state, and persists', async ({
+  page,
+}) => {
+  // The closed-state accessibility of this page (including the toggle's
+  // labelled trigger) is covered by the "login page" axe test above. Here we
+  // assert the interactive behaviour the toggle adds: keyboard operation,
+  // exposed state, and no-flash persistence.
+  await page.goto('/login')
+
+  const toggle = page.getByRole('button', { name: 'Toggle theme' })
+  await expect(toggle).toBeVisible()
+
+  // Keyboard-operable: focus, open with Enter.
+  await toggle.focus()
+  await expect(toggle).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('menu')).toBeVisible()
+
+  // Announces its state: the radio items expose an accessible checked state.
+  const dark = page.getByRole('menuitemradio', { name: 'Dark' })
+  await expect(dark).toHaveAttribute('aria-checked', 'false')
+  await dark.click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+
+  // Choice persists across reload with no flash — the class must be present
+  // on the very first paint, not applied after hydration.
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+})
+
 test('403 page has no detectable a11y violations', async ({ page }) => {
   const email = `noadmin-a11y+${Date.now()}@example.com`
   await page.goto('/register')

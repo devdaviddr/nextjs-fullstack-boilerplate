@@ -8,6 +8,7 @@ import { Menu, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { SidebarNav } from '@/components/shell/sidebar-nav'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { cn } from '@/lib/utils'
 
 const BRAND = 'Boilerplate'
@@ -170,6 +171,7 @@ export function AppShell({
             </button>
             <span className="font-semibold md:hidden">{BRAND}</span>
             <div className="ml-auto flex items-center gap-3">
+              <ThemeToggle />
               <span className="text-muted-foreground hidden max-w-[40vw] truncate text-sm sm:inline">
                 {user.email}
               </span>

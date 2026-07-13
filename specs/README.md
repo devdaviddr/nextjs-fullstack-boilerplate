@@ -55,7 +55,7 @@ other — one isn't a substitute for the other.
 | [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Proposed | —               |
 | [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Proposed | —               |
 | [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Proposed | —               |
-| [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Proposed | —               |
+| [0013](0013-dark-mode-theming.md)                 | Dark-mode toggle & theming            | Shipped  | v0.8.0          |
 | [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
 | [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 | [0018](0018-profile-photo-upload.md)              | Profile photo upload                  | Shipped  | v0.7.0          |

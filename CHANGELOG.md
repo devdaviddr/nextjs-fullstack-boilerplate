@@ -8,6 +8,23 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-13
+
+### Added
+
+- Dark-mode toggle & theming ([spec 0013](specs/0013-dark-mode-theming.md)):
+  a light / dark / system theme switcher. The CSS token set (`.dark` oklch
+  variables in `globals.css`) already existed but was unreachable — this wires
+  up the switch. Powered by `next-themes` with `attribute="class"` and
+  `defaultTheme="system"`, so it respects `prefers-color-scheme` until the user
+  makes an explicit choice, which then persists in `localStorage`. The
+  anti-flash inline script runs under the strict production CSP via the existing
+  per-request nonce (threaded from `proxy.ts` through the root layout) — no
+  `script-src` loosening. A `lucide-react` sun/moon dropdown lives in the app
+  shell topbar and on the login/register pages, so authenticated and
+  unauthenticated users can both pick a theme. The trigger icon swaps purely via
+  CSS to avoid any flash-of-wrong-icon or hydration mismatch.
+
 ## [0.7.2] - 2026-07-13
 
 ### Fixed
