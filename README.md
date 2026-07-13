@@ -127,7 +127,7 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [ ] Dark-mode toggle & theming
 - [ ] Web Push notifications
 
-### Future enhancements
+## Future enhancements
 
 Not scheduled — parked here until a specific deployment actually needs them.
 
