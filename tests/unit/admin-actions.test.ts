@@ -45,6 +45,12 @@ vi.mock('@/lib/auth/password', () => ({
   hashPassword: (...args: unknown[]) => mockHashPassword(...args),
 }))
 
+const mockDeleteAllFilesForUser = vi.fn()
+vi.mock('@/lib/storage/actions', () => ({
+  deleteAllFilesForUser: (...args: unknown[]) =>
+    mockDeleteAllFilesForUser(...args),
+}))
+
 vi.mock('@/db', () => ({ db: dbMock }))
 
 import { ForbiddenError } from '@/lib/auth/rbac'
@@ -129,6 +135,7 @@ beforeEach(() => {
   mockIsEmailEnabled.mockReset().mockReturnValue(false)
   mockSendEmail.mockReset().mockResolvedValue({ sent: false, skipped: true })
   mockHashPassword.mockReset().mockResolvedValue('hashed')
+  mockDeleteAllFilesForUser.mockReset().mockResolvedValue(undefined)
 
   resetRateLimit()
 })
@@ -349,6 +356,9 @@ describe('deleteUser', () => {
 
     await expect(deleteUser(MEMBER_USER_ID)).resolves.toBeUndefined()
     expect(dbMock.delete).toHaveBeenCalled()
+    // S3 objects must be removed before the user row (and its files rows)
+    // cascade-delete — otherwise the bucket keys are lost.
+    expect(mockDeleteAllFilesForUser).toHaveBeenCalledWith(MEMBER_USER_ID)
   })
 })
 

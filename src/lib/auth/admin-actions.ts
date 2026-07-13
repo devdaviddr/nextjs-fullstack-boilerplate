@@ -11,6 +11,7 @@ import { inviteEmail } from '@/lib/email/templates'
 import { env } from '@/lib/env'
 import { AUTH_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { clientIpFromHeaders } from '@/lib/request-ip'
+import { deleteAllFilesForUser } from '@/lib/storage/actions'
 import { headers } from 'next/headers'
 import {
   createUserSchema,
@@ -387,7 +388,12 @@ export async function deleteUser(userId: string): Promise<void> {
     throw new Error('User not found.')
   }
 
-  // Cascade deletes userRoles via FK
+  // The FK cascade removes `userRoles`/`files` rows automatically, but never
+  // the underlying S3 objects — delete those first while their bucket keys
+  // are still known.
+  await deleteAllFilesForUser(userId)
+
+  // Cascade deletes userRoles and files via FK
   await db.delete(users).where(eq(users.id, userId))
 
   logger.info('Admin deleted user', {

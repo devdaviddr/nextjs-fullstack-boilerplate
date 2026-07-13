@@ -17,6 +17,7 @@ Defined in `src/db/schema.ts`. Tables follow the Auth.js Drizzle-adapter convent
 | `sessions`            | Database sessions (unused under JWT strategy, ready for adapter use).                                                                                                           |
 | `verification_tokens` | Email verification / magic-link tokens (schema present; not yet wired).                                                                                                         |
 | `authenticators`      | WebAuthn/passkey credentials (ready for future use).                                                                                                                            |
+| `files`               | Uploaded-file registry — owner, S3 bucket key, original name, MIME type, size. See [Features → File uploads](features.md#file-uploads).                                         |
 
 Roles are read from a `roles: string[]` claim on the JWT — see
 [Features → Access control](features.md#access-control-rbac). The two invite
@@ -79,3 +80,13 @@ postgresql://postgres:postgres@localhost:5432/app?sslmode=disable
 ```
 
 In production, point it at managed Postgres with TLS (`sslmode=require`).
+
+## Object storage (files)
+
+Uploaded files are stored in **MinIO** (S3-compatible), not Postgres — the
+`files` table above only holds metadata + the bucket key. `pnpm docker:minio`
+starts it locally; the app is configured via `S3_ENDPOINT` /
+`S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` (see
+`.env.example`). MinIO has no public ingress in production
+(`docker-compose.prod.yml`) — the app is the only thing that talks to it, via
+`src/lib/storage/`. See [Features → File uploads](features.md#file-uploads).

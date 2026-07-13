@@ -51,7 +51,7 @@ other — one isn't a substitute for the other.
 | [0004](0004-graphify-claude-integration.md)       | graphify & CLAUDE.md integration      | Shipped  | v0.3.1          |
 | [0005](0005-cloudflare-tunnel-deployment.md)      | Cloudflare Tunnel deployment          | Shipped  | v0.4.0          |
 | [0006](0006-rbac.md)                              | Role-based access control (RBAC)      | Shipped  | v0.5.0          |
-| [0007](0007-file-uploads.md)                      | File uploads & object storage (MinIO) | Proposed | —               |
+| [0007](0007-file-uploads.md)                      | File uploads & object storage (MinIO) | Shipped  | v0.6.0          |
 | [0009](0009-automated-backups.md)                 | Automated backups (Postgres + MinIO)  | Proposed | —               |
 | [0010](0010-oauth-providers.md)                   | OAuth providers (GitHub, Google)      | Proposed | —               |
 | [0011](0011-email-verification-password-reset.md) | Email verification & password reset   | Proposed | —               |

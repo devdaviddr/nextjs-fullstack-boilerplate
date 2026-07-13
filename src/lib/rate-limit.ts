@@ -30,6 +30,10 @@ export const AUTH_LIMITS = {
   register: { limit: 20, windowMs: 10 * 60_000 },
 } as const
 
+export const UPLOAD_LIMITS = {
+  upload: { limit: 20, windowMs: 10 * 60_000 },
+} as const
+
 /** Disable in environments (e.g. certain test runs) via env. */
 const DISABLED = process.env.RATE_LIMIT_DISABLED === 'true'
 

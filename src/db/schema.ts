@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm'
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -138,10 +139,39 @@ export const userRoles = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.roleId] })],
 )
 
+export const files = pgTable(
+  'files',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    // Object key in the S3-compatible bucket — `${ownerId}/${uuid}-${name}`.
+    // Cascade-deleting the DB row does NOT delete the underlying object;
+    // callers (see admin-actions.ts deleteUser) must remove the object first.
+    bucketKey: text('bucket_key').notNull().unique(),
+    originalName: text('original_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [index('files_owner_id_idx').on(table.ownerId)],
+)
+
 // Drizzle relations — required for `db.query.*` relational queries with `with`.
 // These are ORM-only (no database migration).
 export const usersRelations = relations(users, ({ many }) => ({
   userRoles: many(userRoles),
+  files: many(files),
+}))
+
+export const filesRelations = relations(files, ({ one }) => ({
+  owner: one(users, {
+    fields: [files.ownerId],
+    references: [users.id],
+  }),
 }))
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -165,3 +195,5 @@ export type Role = typeof roles.$inferSelect
 export type NewRole = typeof roles.$inferInsert
 export type UserRole = typeof userRoles.$inferSelect
 export type NewUserRole = typeof userRoles.$inferInsert
+export type FileRecord = typeof files.$inferSelect
+export type NewFileRecord = typeof files.$inferInsert
