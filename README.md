@@ -26,7 +26,7 @@ An opinionated, batteries-included template built on **Next.js 16** (App Router,
 - 🧑‍⚖️ **Role-based access control** — roles on the JWT, edge + server guards, admin user-management, invite-based account claim
 - 🗄️ **PostgreSQL + Drizzle ORM** — type-safe schema (see the **[ERD](docs/database.md#entity-relationship-diagram)**), committed migrations
 - 📁 **File uploads** — self-hosted, S3-compatible object storage (MinIO), size/type validation, per-user quota
-- 📱 **PWA + responsive app shell** — installable, offline-resilient, **[Web Push](docs/features.md#web-push-notifications-optional)**, light/dark theming, mobile-to-desktop layout
+- 📱 **PWA + responsive app shell** — installable, offline-resilient, **[Web Push](docs/push.md)**, light/dark theming, mobile-to-desktop layout
 - 🔎 **SEO** — OpenGraph/Twitter cards, `robots.txt` + `sitemap.xml`
 - 💾 **[Automated backups](docs/backups.md)** — nightly Postgres + MinIO, doctor script, tested restore runbook
 - 🧪 **Tested** — Vitest units + Playwright E2E, green in CI
@@ -70,6 +70,7 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 🔑 **[OAuth](docs/oauth.md)**               | GitHub + Google sign-in — setup, callback URLs, linking      |
 | ✉️ **[Email](docs/email.md)**               | SMTP setup, password reset, email verification, soft gate    |
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
+| 🔔 **[Web Push](docs/push.md)**             | VAPID setup, subscribe/send, service-worker handlers         |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
 | 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |
 | 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite   |

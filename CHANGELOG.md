@@ -8,7 +8,14 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
-## [0.13.5] - 2026-07-13
+## [0.13.6] - 2026-07-13
+
+### Documentation
+
+- Added a dedicated **[Web Push](docs/push.md)** guide (VAPID setup, subscribe/
+  send, service-worker handlers, security), so every opt-in feature — OAuth,
+  Email, Web Push, Backups — now has its own page. Linked from the README docs
+  index and referenced from `pwa.md` / `features.md`.
 
 ### Documentation
 
