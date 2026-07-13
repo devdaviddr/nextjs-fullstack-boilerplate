@@ -121,11 +121,16 @@ not scaled across a cluster. Specs live in [`specs/`](specs/README.md).
 - [x] RBAC · invite-based account claim · optional email delivery
 - [x] Cloudflare Tunnel deployment
 - [x] File uploads & object storage — self-hosted MinIO, per-user quota
-- [ ] Automated backups — nightly Postgres + MinIO, documented restore path
+- [ ] Dark-mode toggle & theming
+- [ ] SEO & OpenGraph metadata — shareable link-preview cards
 - [ ] OAuth providers (GitHub, Google)
 - [ ] Email verification & password reset
-- [ ] Dark-mode toggle & theming
 - [ ] Web Push notifications
+- [ ] Automated backups — nightly Postgres + MinIO, documented restore path
+
+**Explicit non-goals** (not planned for the single-box portfolio model):
+internationalisation (i18n), third-party error tracking, and shared-store
+rate limiting.
 
 ## Contributing
 

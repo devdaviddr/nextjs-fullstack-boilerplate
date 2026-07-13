@@ -59,13 +59,15 @@ other — one isn't a substitute for the other.
 | [0015](0015-web-push-notifications.md)            | Web Push notifications                | Proposed | —               |
 | [0017](0017-shared-store-rate-limiting.md)        | Shared-store rate limiting (Upstash)  | Proposed | — (conditional) |
 | [0018](0018-profile-photo-upload.md)              | Profile photo upload                  | Shipped  | v0.7.0          |
+| [0019](0019-seo-opengraph-metadata.md)            | SEO & OpenGraph metadata              | Proposed | —               |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).
 >
 > Remaining specs map to the [roadmap](../README.md#roadmap), in priority
 > order, each scoped to ship as its own release. Numbering has gaps (0008,
-> 0012, 0014, 0016) from descoped drafts — SEO metadata, error tracking,
-> Cloudflare Analytics, and i18n aren't planned right now; the numbers aren't
-> reused. 0017 is written but intentionally not scheduled — see its
-> "Non-goals".
+> 0012, 0014, 0016) from descoped drafts — error tracking, Cloudflare
+> Analytics, and i18n aren't planned right now; SEO metadata (originally 0008)
+> was re-scoped for the portfolio use case as [0019](0019-seo-opengraph-metadata.md).
+> The old numbers aren't reused. 0017 is written but intentionally not
+> scheduled — see its "Non-goals".
