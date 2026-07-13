@@ -50,6 +50,49 @@ test('upload, list, download, and delete a file', async ({ page }) => {
   await expect(page.getByText('No files uploaded yet.')).toBeVisible()
 })
 
+test('downloads a file whose name contains non-Latin-1 characters', async ({
+  page,
+}) => {
+  // Regression: a filename with a char above 0xFF (e.g. the U+202F narrow
+  // no-break space macOS puts in screenshot names) used to 500 the download
+  // route, because the Content-Disposition `filename="..."` value can't hold
+  // a non-ByteString character. All the other tests use plain-ASCII names, so
+  // they never caught it.
+  const email = `files-unicode+${Date.now()}@example.com`
+
+  await page.goto('/register')
+  await page.getByLabel('Name').fill('Unicode Tester')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password', { exact: true }).fill('Password123')
+  await page.getByLabel('Confirm password').fill('Password123')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+
+  await page.goto('/settings')
+  // Mimic a real macOS screenshot name: "... 12.01.47<U+202F>pm.png".
+  const nbsp = String.fromCharCode(0x202f)
+  const fileName = `Screenshot 2026-06-20 at 12.01.47${nbsp}pm.png`
+  await page.getByLabel('Upload a file').setInputFiles({
+    name: fileName,
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  })
+
+  const href = await page
+    .getByRole('link', { name: `Download ${fileName}` })
+    .getAttribute('href')
+  expect(href).toBeTruthy()
+
+  const res = await page.request.get(href!)
+  expect(res.status()).toBe(200)
+  expect(res.headers()['content-type']).toContain('image/png')
+  // The modern RFC 5987 param carries the real, percent-encoded name.
+  expect(res.headers()['content-disposition']).toContain("filename*=UTF-8''")
+})
+
 test('rejects a disallowed file type with a clear error', async ({ page }) => {
   const email = `files-reject+${Date.now()}@example.com`
 
