@@ -1,6 +1,6 @@
 {
   "name": "nextjs-fullstack-boilerplate",
-  "version": "0.13.3",
+  "version": "0.13.4",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -31,6 +31,7 @@
     "gen:og": "node scripts/generate-og-image.mjs",
     "docker:db": "docker compose up -d db",
     "docker:minio": "docker compose up -d minio minio-init",
+    "docker:mail": "docker compose up -d mailpit",
     "prepare": "husky || true"
   },
   "dependencies": {

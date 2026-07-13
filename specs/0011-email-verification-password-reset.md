@@ -110,7 +110,12 @@ expected, table-stakes auth flows.
       (`requireEmailVerifiedIfEnforced` in the four admin mutations); `emailVerified`
       is set on confirm.
 - [x] With email disabled, `/forgot-password` shows the "contact an
-      administrator" message and sends nothing (e2e `password-reset.spec.ts`).
+      administrator" message and sends nothing (unit
+      `recovery-actions.test.ts` — the e2e suite runs email-enabled).
+- [x] **Full reset & verification round-trips are e2e-automated** against a
+      Mailpit catcher (`tests/e2e/email-flow.spec.ts`): register → emailed
+      verify link → verified; request reset → emailed link → new password →
+      sign in with it.
 - [x] `invite.ts` → `tokens.ts` generalization has no behavior change — `invite.ts`
       now delegates to `tokens.ts` and the existing `invite.test.ts` still passes.
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
@@ -118,18 +123,17 @@ expected, table-stakes auth flows.
 
 Verification notes:
 
-- Automated: token primitive (`tests/unit/tokens.test.ts`), invite regression
-  (`tests/unit/invite.test.ts`), and route/UI + email-disabled behaviour
-  (`tests/e2e/password-reset.spec.ts`).
-- DB-verified: a reset request persists a `password-reset` token and
-  registration persists an `email-verify` token — both stored as SHA-256
-  hashes (raw token never stored), correctly purpose-scoped.
+- Automated (unit): token primitive (`tokens.test.ts`), DB-backed consume —
+  single-use/expiry/hash-storage/purpose (`verification-tokens.test.ts`), the
+  soft-gate guard (`verification-guard.test.ts`), the email-disabled FR6 branch
+  (`recovery-actions.test.ts`), and the invite regression (`invite.test.ts`).
+- Automated (e2e): the full send → click-emailed-link → complete round-trips
+  for both reset and verification, via Mailpit (`email-flow.spec.ts`); plus
+  route/UI + anti-enumeration message (`password-reset.spec.ts`). The e2e web
+  server is pointed at Mailpit (SMTP 1025 / API 8025) in CI and locally
+  (`pnpm docker:mail`); the round-trip tests self-skip when Mailpit is absent.
 - Visual: the verify-email soft-gate banner renders for a fresh unverified user
   (screenshot).
-- Not automated (needs a mail catcher): clicking the actual emailed link to
-  complete a reset / verify end-to-end — verified manually. The token
-  issuance, consume, expiry, single-use, and purpose-scoping logic underneath
-  it is unit- and DB-verified.
 
 ## Security & privacy
 

@@ -40,6 +40,21 @@ services:
       timeout: 5s
       retries: 10
 
+  # Local mail catcher — SMTP on 1025, web UI + REST API on 8025. Used to
+  # exercise the email flows (reset / verification) end-to-end in E2E without
+  # sending real mail. See docs/email.md.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '1025:1025' # SMTP — matches SMTP_PORT for local email
+      - '8025:8025' # Web UI + API
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8025/readyz']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # One-shot: creates the app bucket, then exits. Safe to re-run (idempotent).
   minio-init:
     image: minio/mc:latest
