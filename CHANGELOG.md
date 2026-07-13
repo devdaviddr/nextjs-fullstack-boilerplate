@@ -8,6 +8,31 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-13
+
+### Added
+
+- Email verification & password reset
+  ([spec 0011](specs/0011-email-verification-password-reset.md)). Self-service
+  password reset via `/forgot-password` → emailed single-use link (1-hour TTL)
+  → `/reset-password`, with an anti-enumeration response (the same "if an
+  account exists…" message regardless of whether the email is registered) and
+  a "Forgot password?" link on the login form. Optional email verification:
+  a verification email is sent on registration when email is enabled, confirmed
+  at `/verify-email`. A new `REQUIRE_EMAIL_VERIFICATION` flag (default off, and
+  ignored when email is disabled) soft-gates unverified users — a dismissible
+  banner with a resend action, plus a server-side block on admin mutations —
+  without locking them out of the app. The invite-token machinery was
+  generalised from `invite.ts` into a shared `tokens.ts` primitive (same
+  32-byte / SHA-256 / timing-safe design) now backing invites, reset, and
+  verification; a `purpose` column on `verification_tokens` scopes each token
+  so it can't be replayed cross-flow.
+
+### Changed
+
+- `verification_tokens` gains a nullable `purpose` column (migration
+  `0006_daily_silver_fox`).
+
 ## [0.10.0] - 2026-07-13
 
 ### Added

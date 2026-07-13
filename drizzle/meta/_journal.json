@@ -43,6 +43,13 @@
       "when": 1783905901205,
       "tag": "0005_wealthy_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783919506497,
+      "tag": "0006_daily_silver_fox",
+      "breakpoints": true
     }
   ]
 }

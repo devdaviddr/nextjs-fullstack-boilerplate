@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { signIn, signOut } from '@/lib/auth'
+import { sendVerificationEmail } from '@/lib/auth/email-verification'
 import type { AuthFormState } from '@/lib/auth/form-state'
 import { hashPassword } from '@/lib/auth/password'
 import { verifyInviteToken } from '@/lib/auth/invite'
@@ -166,6 +167,10 @@ export async function registerAction(
     logger.error('Registration insert failed', { error: String(error) })
     return { status: 'error', message: 'Could not create your account.' }
   }
+
+  // Kick off email verification (no-op when email is disabled). A send failure
+  // is swallowed inside sendVerificationEmail so it never blocks sign-in.
+  await sendVerificationEmail(email)
 
   try {
     await signIn('credentials', { email, password, redirectTo: '/dashboard' })

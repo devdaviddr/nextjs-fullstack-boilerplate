@@ -5,6 +5,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { users, roles, userRoles } from '@/db/schema'
 import { requireRole, ForbiddenError } from '@/lib/auth/rbac'
+import { requireEmailVerifiedIfEnforced } from '@/lib/auth/verification-guard'
 import { createInviteToken } from '@/lib/auth/invite'
 import { sendEmail, isEmailEnabled } from '@/lib/email'
 import { inviteEmail } from '@/lib/email/templates'
@@ -140,6 +141,7 @@ export async function getAllRoles(): Promise<
  */
 export async function createUser(input: CreateUserInput): Promise<CreatedUser> {
   await requireRole('admin')
+  await requireEmailVerifiedIfEnforced()
   await checkAdminRateLimit('create-user')
 
   const parsed = createUserSchema.safeParse(input)
@@ -253,6 +255,7 @@ export async function updateUser(
   input: UpdateUserInput,
 ): Promise<UserWithRoles> {
   await requireRole('admin')
+  await requireEmailVerifiedIfEnforced()
   await checkAdminRateLimit('update-user')
 
   const parsed = updateUserSchema.safeParse(input)
@@ -370,6 +373,7 @@ export async function updateUser(
  */
 export async function deleteUser(userId: string): Promise<void> {
   await requireRole('admin')
+  await requireEmailVerifiedIfEnforced()
   await checkAdminRateLimit('delete-user')
 
   const session = await getCurrentSession()
@@ -407,6 +411,7 @@ export async function deleteUser(userId: string): Promise<void> {
  */
 export async function assignRoles(input: AssignRolesInput): Promise<void> {
   await requireRole('admin')
+  await requireEmailVerifiedIfEnforced()
   await checkAdminRateLimit('assign-roles')
 
   const parsed = assignRolesSchema.safeParse(input)

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createToken, hashToken, verifyToken } from './tokens'
 
 /** How long an invite link stays valid. */
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -8,19 +8,15 @@ export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 /**
  * Mint a single-use invite token. The raw `token` is shown to the admin ONCE
  * (put in the invite link); only its `tokenHash` is stored, so a database leak
- * can't be used to claim accounts.
+ * can't be used to claim accounts. Thin wrapper over the shared token
+ * primitive (`tokens.ts`), fixed to the invite TTL.
  */
 export function createInviteToken() {
-  const token = randomBytes(32).toString('base64url')
-  return {
-    token,
-    tokenHash: hashInviteToken(token),
-    expires: new Date(Date.now() + INVITE_TTL_MS),
-  }
+  return createToken(INVITE_TTL_MS)
 }
 
 export function hashInviteToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex')
+  return hashToken(token)
 }
 
 /**
@@ -32,11 +28,5 @@ export function verifyInviteToken(
   storedHash: string | null,
   expires: Date | null,
 ): boolean {
-  if (!token || !storedHash) return false
-  if (expires && expires.getTime() < Date.now()) return false
-  const presented = Buffer.from(hashInviteToken(token))
-  const stored = Buffer.from(storedHash)
-  return (
-    presented.length === stored.length && timingSafeEqual(presented, stored)
-  )
+  return verifyToken(token, storedHash, expires)
 }

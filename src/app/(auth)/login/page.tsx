@@ -30,11 +30,12 @@ function oauthErrorMessage(error?: string): string | null {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; reset?: string }>
 }) {
-  const { error } = await searchParams
+  const { error, reset } = await searchParams
   const providers = configuredOAuthProviders()
   const errorMessage = oauthErrorMessage(error)
+  const resetDone = reset === 'success'
 
   return (
     <Card>
@@ -49,6 +50,14 @@ export default async function LoginPage({
             className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm"
           >
             {errorMessage}
+          </p>
+        )}
+        {resetDone && (
+          <p
+            role="status"
+            className="border-primary/30 bg-primary/5 rounded-md border px-3 py-2 text-sm"
+          >
+            Your password has been reset. Sign in with your new password.
           </p>
         )}
         <LoginForm />
