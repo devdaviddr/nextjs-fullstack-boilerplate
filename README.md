@@ -67,22 +67,23 @@ opencode (`/self-host`). See **[Self-hosting](docs/self-hosting.md)**.
 
 ## Documentation
 
-| Doc                                         | What's inside                                                      |
-| ------------------------------------------- | ------------------------------------------------------------------ |
-| 📋 **[Features](docs/features.md)**         | Complete feature list and what's included                          |
-| 🏛️ **[Architecture](docs/architecture.md)** | Request flow, auth design, security model, project structure       |
-| 🗄️ **[Database](docs/database.md)**         | ERD, schema, migrations, Drizzle workflow, seeding                 |
-| 🔑 **[OAuth](docs/oauth.md)**               | GitHub + Google sign-in — setup, callback URLs, linking            |
-| ✉️ **[Email](docs/email.md)**               | SMTP setup, password reset, email verification, soft gate          |
-| 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell         |
-| 🔔 **[Web Push](docs/push.md)**             | VAPID setup, subscribe/send, service-worker handlers               |
-| 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app              |
-| 📦 **[Self-hosting](docs/self-hosting.md)** | `make setup` clone-to-live + continuous deployment (`make deploy`) |
-| 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths             |
-| ⚙️ **[CI/CD](docs/ci-cd.md)**               | GitHub Actions pipeline, quality gates, E2E + Docker jobs          |
-| 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite         |
-| 📄 **[Summary](docs/summary.md)**           | One-page project overview — stats, stack, what ships               |
-| 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release             |
+| Doc                                             | What's inside                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| 📋 **[Features](docs/features.md)**             | Complete feature list and what's included                          |
+| 🏛️ **[Architecture](docs/architecture.md)**     | Request flow, auth design, security model, project structure       |
+| 🗄️ **[Database](docs/database.md)**             | ERD, schema, migrations, Drizzle workflow, seeding                 |
+| 🔑 **[OAuth](docs/oauth.md)**                   | GitHub + Google sign-in — setup, callback URLs, linking            |
+| ✉️ **[Email](docs/email.md)**                   | SMTP setup, password reset, email verification, soft gate          |
+| 📱 **[PWA & App Shell](docs/pwa.md)**           | Manifest, service worker strategy, icons, responsive shell         |
+| 🔔 **[Web Push](docs/push.md)**                 | VAPID setup, subscribe/send, service-worker handlers               |
+| 🛠️ **[Usage & Development](docs/usage.md)**     | Scripts, env vars, testing, Docker, extending the app              |
+| 📦 **[Self-hosting](docs/self-hosting.md)**     | `make setup` clone-to-live + continuous deployment (`make deploy`) |
+| 🚀 **[Deployment](docs/deployment.md)**         | Cloudflare Tunnel — quick, guided, and Terraform paths             |
+| ⚙️ **[CI/CD](docs/ci-cd.md)**                   | GitHub Actions pipeline, quality gates, E2E + Docker jobs          |
+| 🔁 **[Feature → Production](docs/workflow.md)** | One playbook: branch → PR → CI → release → Mac mini deploy         |
+| 💾 **[Backups](docs/backups.md)**               | Nightly Postgres + MinIO backups, restore runbook, offsite         |
+| 📄 **[Summary](docs/summary.md)**               | One-page project overview — stats, stack, what ships               |
+| 📐 **[Specs](specs/README.md)**                 | Spec-driven development — one spec per feature/release             |
 
 ## Scripts
 
@@ -132,9 +133,10 @@ email round-trips, Mailpit).
 ```
 src/
 ├── app/            # App Router: (auth) + (dashboard) groups, api/ (incl. files/[id]), PWA manifest & offline
-├── components/     # auth · files · push · pwa · shell · theme · ui (shadcn)
+├── components/     # auth · files · push · pwa · settings · shell · theme · ui (shadcn)
 ├── db/             # Drizzle schema, client, migrate & seed scripts
-├── lib/            # auth (config/actions/rbac/oauth/tokens/recovery), email, push, storage (S3/MinIO), validations, env
+├── lib/            # auth (config/actions/rbac/oauth/tokens/recovery), email, push, storage (S3/MinIO), shell/nav, validations, env
+├── types/          # shared TypeScript types
 └── proxy.ts        # edge route protection + role gating (Next 16 "proxy" convention)
 ```
 
@@ -143,15 +145,16 @@ Full tree and rationale in **[Architecture](docs/architecture.md)**.
 ## Deployment
 
 Serve the Docker stack on a Cloudflare domain via **Cloudflare Tunnel** — no
-open ports, no reverse proxy, no certs. An instant public preview needs no
-Cloudflare account:
+open ports, no reverse proxy, no certs. Three on-ramps, all converging on the
+same runtime:
 
-```bash
-make tunnel-quick   # → https://<random>.trycloudflare.com
-```
+- **Quick** — `make tunnel-quick` → an instant `https://<random>.trycloudflare.com` URL, no Cloudflare account.
+- **Guided** — your domain, a tunnel token pasted from the Cloudflare dashboard.
+- **Automated** — your domain, provisioned end-to-end by Terraform.
 
-For a custom domain there are guided (dashboard) and one-command (Terraform)
-paths. Full setup and usage: **[Deployment](docs/deployment.md)**.
+The guided path to all three, clone-to-live, is `make setup` — see
+**[Self-hosting](docs/self-hosting.md)**. For per-command / Terraform
+reference: **[Deployment](docs/deployment.md)**.
 
 ## Roadmap
 

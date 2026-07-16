@@ -13,7 +13,8 @@ make setup
 This guide is the **journey** (clone → live). For per-command reference and the
 individual `make tunnel-*` targets, see [deployment.md](deployment.md); for the
 CI pipeline see [ci-cd.md](ci-cd.md); for day-2 data safety see
-[backups.md](backups.md).
+[backups.md](backups.md); for the full loop from a feature branch to a deploy
+on this box, see [Feature → Production](workflow.md).
 
 ---
 
@@ -200,6 +201,10 @@ Then, to update:
 make deploy    # docker compose pull → up -d  (prod + deploy + tunnel overlays)
 ```
 
+The `deploy` overlay (`docker-compose.deploy.yml`) is what switches the stack
+from "build locally" to "pull the published image `APP_IMAGE:APP_TAG` from
+GHCR" — it's the piece that makes `make deploy` a pull, not a rebuild.
+
 `make deploy` pulls both images, runs the one-shot **migrate** (it gates the app
 via `depends_on`, so schema changes apply **before** the new app starts), then
 restarts the app behind the tunnel — **no building on the box**. If the package
@@ -209,7 +214,7 @@ is private, `docker login ghcr.io` once on the box with a read-only PAT.
 interval so new releases roll out unattended:
 
 ```bash
-make deploy-timer                              # every 60s (digest-skipped)
+make deploy-timer                              # every 60s (default; digest-skipped)
 ./scripts/macos-deploy-timer.sh install 300    # or a custom interval (≥ 60s)
 ./scripts/macos-deploy-timer.sh status         # is it loaded?
 ./scripts/macos-deploy-timer.sh uninstall
@@ -353,6 +358,7 @@ external drive — see [backups.md](backups.md#optional-offsite-copy-disk-failur
 | **503 everywhere + "No ingress rules" in `cloudflared` logs** | The tunnel is _locally-managed_ (created with `cloudflared tunnel create`), so a token-run daemon gets no remote config. Create tunnels in the **dashboard** or via **Terraform** (both remotely-managed), or push a remote config: the token embedded in `~/.cloudflared/cert.pem` (`ARGO TUNNEL TOKEN` block → base64 JSON `.apiToken`) can `PUT …/cfd_tunnel/<id>/configurations`. |
 | **Quick URL changed**                                         | It's ephemeral by design — use guided/automated for a stable domain.                                                                                                                                                                                                                                                                                                                  |
 | **Rate limiting sees wrong IP**                               | Traffic must arrive via Cloudflare so `CF-Connecting-IP` is present; direct origin hits won't have it.                                                                                                                                                                                                                                                                                |
+| **`make deploy` / timer tick fails — `.env` not found**       | The box's `.env` needs at least `AUTH_SECRET`, `AUTH_URL`, `CLOUDFLARE_TUNNEL_TOKEN`, and `APP_IMAGE` (+ optionally `APP_TAG`). `make deploy` reads the project-dir `.env`; `make deploy-timer` copies it in each tick from `~/.config/nextjs-fullstack-boilerplate/.env` — override the source path with `DEPLOY_ENV_FILE`.                                                          |
 
 ---
 

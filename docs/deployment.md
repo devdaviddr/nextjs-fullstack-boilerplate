@@ -23,16 +23,12 @@ Three on-ramps, all converging on the same runtime:
 
 ## How it works
 
-```text
-User ──HTTPS──▶  Cloudflare edge  ◀══ outbound tunnel ══  cloudflared ──▶ app:3000
-                 (terminates TLS)                          (in Docker)
-```
-
 `cloudflared` dials **out** to Cloudflare and holds the connection open;
-Cloudflare terminates TLS for your domain and pushes matching requests down that
-connection to the app container over the internal Docker network. No inbound
-ports are opened on your host. (Deeper walkthrough:
-[architecture](architecture.md).)
+Cloudflare terminates TLS for your domain and pushes matching requests down
+that connection to the app container over the internal Docker network — no
+inbound ports are opened on your host. Full diagram and deeper walkthrough:
+[self-hosting.md → How it works](self-hosting.md#how-it-works-one-diagram)
+and [architecture.md](architecture.md).
 
 ## Prerequisites
 
@@ -123,16 +119,12 @@ Update `cloudflared` by re-pulling the image:
 
 ## Troubleshooting
 
-- **502 / Bad gateway** — the app isn't ready yet, or the ingress service is
-  wrong; it must be `http://app:3000` (the Compose service name, not `localhost`).
-- **Login loop / cookies not sticking** — set `AUTH_URL` to the exact public URL
-  and keep `AUTH_TRUST_HOST=true`.
-- **Tunnel won't connect** — check the token (`make tunnel-token`) and the
-  `cloudflared` logs; a token is bound to one tunnel.
-- **Quick-tunnel URL changed** — it's ephemeral; every `make tunnel-quick` gets a
-  new hostname. Use a named tunnel for a stable URL.
-- **Rate limiting sees the wrong IP** — traffic must arrive via Cloudflare so
-  `CF-Connecting-IP` is present; direct hits to the origin won't have it.
+Full table (all symptoms, including deploy/timer failures):
+[self-hosting.md → Troubleshooting](self-hosting.md#troubleshooting). The one
+specific to this doc's Terraform path: if `make tunnel-provision` succeeds but
+the tunnel never connects, re-check the API token's two scopes (Prerequisites,
+above) — a token missing either **Tunnel: Edit** or **DNS: Edit** fails silently
+partway through provisioning.
 
 ## Notes
 
