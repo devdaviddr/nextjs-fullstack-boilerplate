@@ -12,9 +12,9 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 - Published container images are now **multi-arch** (`linux/amd64` +
   `linux/arm64`), so `make deploy` / `docker pull` works on Apple Silicon Mac
-  minis and other ARM hosts — not just amd64 servers. CI builds the arm64
-  variant via QEMU (`docker/setup-qemu-action`). The initial v0.14.0 images were
-  amd64-only.
+  minis and other ARM hosts — not just amd64 servers. CI builds each arch on its
+  own native runner (`ubuntu-latest` + `ubuntu-24.04-arm`), pushes by digest, and
+  merges a multi-arch manifest. The initial v0.14.0 images were amd64-only.
 
 ## [0.14.0] - 2026-07-16
 

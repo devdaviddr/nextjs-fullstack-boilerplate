@@ -119,24 +119,32 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  # Build each arch on its OWN native runner (no QEMU emulation → fast), push by
+  # digest, then `docker-merge` assembles the multi-arch manifest. Publishing is
+  # gated to non-PR events; PRs build both arches cache-only to prove they
+  # compile without pushing (fork-safe).
   docker:
-    name: Docker build & publish
-    runs-on: ubuntu-latest
-    # Only publish tested images: gate on the quality + e2e jobs. PRs still run
-    # this to prove the Dockerfile builds, but never push (see `push:` below).
+    name: Build image (${{ matrix.platform }})
     needs: [quality, e2e]
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      APP_IMAGE: ghcr.io/${{ github.repository }}
+      MIGRATE_IMAGE: ghcr.io/${{ github.repository }}/migrate
     steps:
       - uses: actions/checkout@v4
-      # QEMU enables the emulated linux/arm64 build so the published images run
-      # on Apple Silicon Mac minis / ARM boxes as well as amd64 servers.
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      # Publish only on trusted events (main / tags) — a fork PR builds the
-      # image but cannot log in or push.
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -145,52 +153,131 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- app image (production `runner` target) ---
-      - name: App image metadata
-        id: meta-app
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=sha
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Platform pair
+        run: echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+        env:
+          platform: ${{ matrix.platform }}
 
-      - name: Build & push app
+      # app image (production `runner` target)
+      - name: Build app (${{ matrix.platform }})
+        id: build-app
         uses: docker/build-push-action@v6
         with:
           context: .
           target: runner
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-app.outputs.tags }}
-          labels: ${{ steps.meta-app.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.platform }}
+          outputs: ${{ github.event_name != 'pull_request' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.APP_IMAGE) || 'type=cacheonly' }}
+          cache-from: type=gha,scope=app-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=app-${{ env.PLATFORM_PAIR }}
 
-      # --- migrate image (`builder` target — runs `pnpm db:migrate`) ---
-      # The runner standalone image can't run migrations (no tsx/source), so the
-      # builder is published separately and used by the compose `migrate` service.
-      - name: Migrate image metadata
-        id: meta-migrate
+      # migrate image (`builder` target — the only one that can run `db:migrate`)
+      - name: Build migrate (${{ matrix.platform }})
+        id: build-migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: builder
+          platforms: ${{ matrix.platform }}
+          outputs: ${{ github.event_name != 'pull_request' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.MIGRATE_IMAGE) || 'type=cacheonly' }}
+          cache-from: type=gha,scope=migrate-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=migrate-${{ env.PLATFORM_PAIR }}
+
+      - name: Export digests
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p "$RUNNER_TEMP/app" "$RUNNER_TEMP/migrate"
+          touch "$RUNNER_TEMP/app/${APP_DIGEST#sha256:}"
+          touch "$RUNNER_TEMP/migrate/${MIGRATE_DIGEST#sha256:}"
+        env:
+          APP_DIGEST: ${{ steps.build-app.outputs.digest }}
+          MIGRATE_DIGEST: ${{ steps.build-migrate.outputs.digest }}
+
+      - name: Upload app digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-app-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/app/*
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload migrate digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-migrate-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/migrate/*
+          retention-days: 1
+          if-no-files-found: error
+
+  # Assemble the per-arch digests into one multi-arch manifest per image, tagged
+  # by metadata-action (sha / branch / semver on tags / latest on main).
+  docker-merge:
+    name: Publish multi-arch manifest
+    needs: docker
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      APP_IMAGE: ghcr.io/${{ github.repository }}
+      MIGRATE_IMAGE: ghcr.io/${{ github.repository }}/migrate
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- app manifest ---
+      - name: Download app digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/app
+          pattern: digests-app-*
+          merge-multiple: true
+      - name: App image metadata
+        id: meta-app
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/migrate
+          images: ${{ env.APP_IMAGE }}
           tags: |
             type=sha
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
+      - name: Create & push app manifest
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.APP_IMAGE }}@sha256:%s ' *)
+          docker buildx imagetools inspect ${{ env.APP_IMAGE }}:${{ steps.meta-app.outputs.version }}
 
-      - name: Build & push migrate
-        uses: docker/build-push-action@v6
+      # --- migrate manifest ---
+      - name: Download migrate digests
+        uses: actions/download-artifact@v4
         with:
-          context: .
-          target: builder
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-migrate.outputs.tags }}
-          labels: ${{ steps.meta-migrate.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          path: ${{ runner.temp }}/migrate
+          pattern: digests-migrate-*
+          merge-multiple: true
+      - name: Migrate image metadata
+        id: meta-migrate
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.MIGRATE_IMAGE }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Create & push migrate manifest
+        working-directory: ${{ runner.temp }}/migrate
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.MIGRATE_IMAGE }}@sha256:%s ' *)
+          docker buildx imagetools inspect ${{ env.MIGRATE_IMAGE }}:${{ steps.meta-migrate.outputs.version }}
