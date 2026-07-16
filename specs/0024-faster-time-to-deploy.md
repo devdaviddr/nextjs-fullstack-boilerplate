@@ -1,7 +1,7 @@
 ---
 id: 0024
 title: Faster time-to-deploy — re-tag on release, overlap build with e2e, tighter pull loop
-status: Accepted # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
+status: Shipped # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
 release: v0.17.0
 created: 2026-07-16
 updated: 2026-07-16
