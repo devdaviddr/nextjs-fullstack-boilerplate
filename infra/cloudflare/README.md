@@ -6,6 +6,9 @@ outputs the **tunnel token** the `cloudflared` container runs with.
 
 Pinned to the Cloudflare provider **`~> 4.52`**. (On provider v5 the resource
 names differ — `cloudflare_zero_trust_tunnel_cloudflared*`, `cloudflare_dns_record`.)
+Staying on v4 is deliberate. If you upgrade to v5, expect to
+`terraform state mv` the renamed resources — never mix provider versions
+against existing state.
 
 ## Prerequisites
 

@@ -83,12 +83,20 @@ const credentialsProvider = Credentials({
     // POSTs to /api/auth/callback/credentials. Keyed separately from the
     // server action so the two entry points don't double-decrement.
     const ip = ipFromRequest(request)
+    // Two buckets: per IP+email (brute force on one account) and per IP across
+    // all accounts (credential stuffing). Keyed `authz-*` to stay independent
+    // of the server action's `login-*` buckets.
     const limited = rateLimit(
       `authz:${ip}:${email}`,
       AUTH_LIMITS.login.limit,
       AUTH_LIMITS.login.windowMs,
     )
-    if (!limited.success) {
+    const ipLimited = rateLimit(
+      `authz-ip:${ip}`,
+      AUTH_LIMITS.loginPerIp.limit,
+      AUTH_LIMITS.loginPerIp.windowMs,
+    )
+    if (!limited.success || !ipLimited.success) {
       logger.warn('Login rate limit exceeded (authorize)', { ip })
       await fakeVerifyPassword(password)
       return null

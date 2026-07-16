@@ -5,7 +5,7 @@ TF      := terraform -chdir=infra/cloudflare
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup deploy tunnel-quick tunnel-provision tunnel-token tunnel-up tunnel-down tunnel-verify tunnel-destroy
+.PHONY: help setup deploy autostart tunnel-quick tunnel-provision tunnel-token tunnel-up tunnel-down tunnel-verify tunnel-destroy
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -17,6 +17,9 @@ setup: ## Guided one-click self-hosting (secrets → tunnel → seed → verify)
 deploy: ## Pull the published GHCR image + migrate + restart behind the tunnel (needs APP_IMAGE)
 	$(DEPLOY) pull
 	$(DEPLOY) up -d
+
+autostart: ## macOS: install a login LaunchAgent that boots the stack after a reboot
+	@./scripts/macos-autostart.sh install
 
 tunnel-quick: ## Ephemeral public URL, no account (prints the trycloudflare.com URL)
 	$(COMPOSE) -f docker-compose.quick-tunnel.yml up --build

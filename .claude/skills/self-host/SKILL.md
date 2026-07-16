@@ -89,8 +89,9 @@ The wizard makes it _live_, not _boot-persistent_. Offer to help with:
 - **Never sleep:** `sudo pmset -a sleep 0 disablesleep 1 womp 1`.
 - **Start the container runtime on boot:** OrbStack/Colima (headless-friendly), or
   Docker Desktop + auto-login. Containers already use `restart: unless-stopped`.
-- **Auto-start the stack:** a `launchd` LaunchAgent running `make tunnel-up` at
-  login.
+- **Auto-start the stack:** `make autostart` installs a login LaunchAgent
+  (`scripts/macos-autostart.sh` — waits for Docker, then `make tunnel-up`;
+  `install deploy` for pull-based updates instead).
 
 ## Operate / teardown
 

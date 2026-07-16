@@ -226,12 +226,19 @@ export async function loginAction(
   const { email, password } = parsed.data
 
   const ip = await clientIp()
+  // Per-account bucket + global per-IP bucket (credential stuffing) — see
+  // rate-limit.ts. Keyed `login-*`, independent of authorize's `authz-*`.
   const limit = rateLimit(
     `login:${ip}:${email}`,
     AUTH_LIMITS.login.limit,
     AUTH_LIMITS.login.windowMs,
   )
-  if (!limit.success) {
+  const ipLimit = rateLimit(
+    `login-ip:${ip}`,
+    AUTH_LIMITS.loginPerIp.limit,
+    AUTH_LIMITS.loginPerIp.windowMs,
+  )
+  if (!limit.success || !ipLimit.success) {
     logger.warn('Login rate limit exceeded', { ip, email })
     return { status: 'error', message: TOO_MANY }
   }

@@ -111,6 +111,9 @@ preflight() {
   command -v openssl >/dev/null 2>&1 || die "openssl is required to generate AUTH_SECRET."
   ok "openssl present"
 
+  [ -f .env.example ] || die ".env.example not found — clone the full repository (no sparse checkout)."
+  ok ".env.example present"
+
   if [ "$MODE" = "automated" ]; then
     command -v terraform >/dev/null 2>&1 \
       || die "Automated mode needs Terraform on PATH. Install it, or pick 'guided' mode."
@@ -236,6 +239,8 @@ EOF
 seed_admin() {
   [ "${NO_SEED:-0}" = "1" ] && { warn "Skipping seed (NO_SEED=1)"; return; }
   step "Seeding the demo admin"
+  # `compose run` resolves the migrate service's depends_on (db healthy), so
+  # this blocks until Postgres is ready — no explicit wait needed.
   docker compose -f docker-compose.prod.yml run --rm migrate pnpm db:seed
   ok "Admin ready: $DEMO_EMAIL / $DEMO_PASSWORD"
 }

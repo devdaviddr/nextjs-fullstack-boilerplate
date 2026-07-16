@@ -17,20 +17,22 @@ URL="${URL%/}"
 
 fail=0
 
+health_body=$(mktemp)
+trap 'rm -f "$health_body"' EXIT
+
 printf '→ GET %s/api/health\n' "$URL"
-code=$(curl -fsS -o /tmp/tunnel_health -w '%{http_code}' "$URL/api/health" 2>/dev/null || echo 000)
-if [ "$code" = "200" ] && grep -q '"db":"up"' /tmp/tunnel_health 2>/dev/null; then
+code=$(curl -fsS -o "$health_body" -w '%{http_code}' "$URL/api/health" 2>/dev/null || echo 000)
+if [ "$code" = "200" ] && grep -q '"db":"up"' "$health_body" 2>/dev/null; then
   echo "  ✓ health 200, db up"
 else
   echo "  ✗ health check failed (HTTP $code)"
   fail=1
 fi
-rm -f /tmp/tunnel_health
 
 printf '→ security headers\n'
 headers=$(curl -fsSI "$URL" 2>/dev/null || true)
-echo "$headers" | grep -qi '^strict-transport-security:' && echo "  ✓ HSTS" || { echo "  ✗ HSTS missing"; fail=1; }
-echo "$headers" | grep -qi '^content-security-policy:' && echo "  ✓ CSP" || { echo "  ✗ CSP missing"; fail=1; }
+if echo "$headers" | grep -qi '^strict-transport-security:'; then echo "  ✓ HSTS"; else echo "  ✗ HSTS missing"; fail=1; fi
+if echo "$headers" | grep -qi '^content-security-policy:'; then echo "  ✓ CSP"; else echo "  ✗ CSP missing"; fail=1; fi
 
 if [ "$fail" -eq 0 ]; then
   echo "✓ Tunnel deployment looks healthy."

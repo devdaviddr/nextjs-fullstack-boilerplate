@@ -6,10 +6,10 @@
  * `@upstash/ratelimit` — keep the `rateLimit()` signature and only the storage
  * changes.
  *
- * NOTE: this limits per key. `authRateLimit` keys login attempts by IP+email
- * (per-account brute force) and registrations by IP. A global per-IP login cap
- * to blunt credential stuffing across many accounts is a good next step (do it
- * in the shared-store version).
+ * NOTE: this limits per key. Login attempts are limited twice: per IP+email
+ * (brute force against one account) and globally per IP (`loginPerIp` —
+ * credential stuffing across many accounts from one source). Registrations
+ * are keyed by IP.
  */
 export interface RateLimitResult {
   success: boolean
@@ -27,6 +27,9 @@ const store = new Map<string, Bucket>()
 
 export const AUTH_LIMITS = {
   login: { limit: 8, windowMs: 10 * 60_000 },
+  // Global per-IP cap across ALL accounts — blunts credential stuffing while
+  // still allowing a handful of users behind one NAT to mistype passwords.
+  loginPerIp: { limit: 50, windowMs: 10 * 60_000 },
   register: { limit: 20, windowMs: 10 * 60_000 },
 } as const
 
