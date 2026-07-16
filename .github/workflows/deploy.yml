@@ -20,8 +20,17 @@ jobs:
     runs-on: [self-hosted]
     steps:
       - uses: actions/checkout@v4
-      # APP_IMAGE / APP_TAG and the tunnel vars (AUTH_URL, CLOUDFLARE_TUNNEL_TOKEN)
-      # live in the box's .env, which `make deploy` reads. This pulls the freshly
-      # published images, runs migrations, and restarts the app behind the tunnel.
+      # actions/checkout cleans the work tree every run (git clean -ffdx), so
+      # .env cannot live in the checkout. The operator keeps it at a fixed path
+      # on the box (override with a DEPLOY_ENV_FILE runner env var); it holds
+      # APP_IMAGE / APP_TAG and the tunnel vars (AUTH_URL, CLOUDFLARE_TUNNEL_TOKEN,
+      # AUTH_SECRET). See docs/self-hosting.md → Tier C.
       - name: Pull & deploy
-        run: make deploy
+        run: |
+          ENV_SRC="${DEPLOY_ENV_FILE:-$HOME/.config/nextjs-fullstack-boilerplate/.env}"
+          if [ ! -f "$ENV_SRC" ]; then
+            echo "::error::$ENV_SRC not found on the runner box — create it (see docs/self-hosting.md → Tier C)"
+            exit 1
+          fi
+          install -m 600 "$ENV_SRC" .env
+          make deploy

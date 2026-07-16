@@ -179,7 +179,7 @@ Point the box at the published image and update with one command. In the box's
 
 ```bash
 APP_IMAGE="ghcr.io/your-org/nextjs-fullstack-boilerplate"
-APP_TAG="latest"        # or pin a release, e.g. v0.14.0
+APP_TAG="latest"        # or pin a release, e.g. 0.15.0 (no "v" — semver image tags)
 ```
 
 Then, to update:
@@ -204,9 +204,16 @@ self-hosted runner** and enable the shipped [`deploy.yml`](../.github/workflows/
 
 1. Add a self-hosted runner on the box (GitHub → Settings → Actions → Runners).
    The runner **dials out** to GitHub, so it works behind the tunnel.
-2. Set the repo variable `SELF_HOSTED_DEPLOY = true` (Settings → Secrets and
+2. Put the box's config at
+   `~/.config/nextjs-fullstack-boilerplate/.env` (chmod 600) — the runner's
+   checkout is wiped every run (`git clean`), so `.env` can't live in the work
+   tree. It needs at least `AUTH_SECRET`, `AUTH_URL`,
+   `CLOUDFLARE_TUNNEL_TOKEN`, `APP_IMAGE` (and optionally `APP_TAG`). Override
+   the path with a `DEPLOY_ENV_FILE` env var on the runner if you prefer.
+3. Set the repo variable `SELF_HOSTED_DEPLOY = true` (Settings → Secrets and
    variables → Actions → Variables). Until you do, `deploy.yml` is skipped.
-3. Push a `v*` tag — the runner runs `make deploy` on the box.
+4. Push a `v*` tag — the runner copies that env file into the checkout and runs
+   `make deploy` on the box.
 
 > ⚠️ A self-hosted runner executes workflow code on your network. Use it only on
 > a **private** repo (or one where you trust every tag), and prefer an

@@ -8,6 +8,15 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Fixed
+
+- Tier C self-hosted deploys: `deploy.yml` now copies the operator's `.env` from
+  `~/.config/nextjs-fullstack-boilerplate/.env` (or `DEPLOY_ENV_FILE`) into the
+  checkout before `make deploy` — `actions/checkout` cleans the work tree every
+  run, so a `.env` in the checkout could never survive. Documented in
+  Self-hosting → Tier C, along with the correct pinned-tag format
+  (`APP_TAG=0.15.0`, no `v` — semver image tags are unprefixed).
+
 ## [0.15.0] - 2026-07-16
 
 ### Added
