@@ -174,8 +174,8 @@ deploy_quick() {
   info "AUTH_SECRET + AUTH_TRUST_HOST are enough here; no domain needed."
   "${QUICK_COMPOSE[@]}" up -d --build
   step "Waiting for the trycloudflare.com URL"
-  local i url=""
-  for i in $(seq 1 60); do
+  local url=""
+  for _ in $(seq 1 60); do
     url="$("${QUICK_COMPOSE[@]}" logs cloudflared 2>/dev/null \
       | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -1 || true)"
     [ -n "$url" ] && break
@@ -243,9 +243,9 @@ seed_admin() {
 verify() {
   step "Verifying the deployment"
   # Give a freshly-connected tunnel a moment before probing over HTTPS.
-  local i
-  for i in $(seq 1 30); do
-    curl -fsS -o /dev/null "$PUBLIC_URL/api/health" 2>/dev/null && break || sleep 2
+  for _ in $(seq 1 30); do
+    if curl -fsS -o /dev/null "$PUBLIC_URL/api/health" 2>/dev/null; then break; fi
+    sleep 2
   done
   URL="$PUBLIC_URL" ./scripts/tunnel-verify.sh || warn "Verify reported issues — see output above."
 }
