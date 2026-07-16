@@ -8,6 +8,22 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **One-click self-hosting** (`make setup`) — a guided wizard
+  ([`scripts/setup.sh`](scripts/setup.sh)) that takes a fresh clone to a live app
+  behind a Cloudflare Tunnel: preflight checks, `AUTH_SECRET` generation, a choice
+  of quick / guided / automated on-ramp, demo-admin seeding, and a health verify.
+  It orchestrates the existing tunnel primitives (spec 0005) rather than replacing
+  them; idempotent and scriptable (non-interactive via env vars). New
+  **[Self-hosting](docs/self-hosting.md)** guide and README pointer. See
+  [spec 0020](specs/0020-one-click-self-hosting-setup.md).
+- **`self-host` agent skill** for **Claude Code** (`.claude/skills/self-host/`) and
+  **opencode** (`.opencode/skills/self-host/`) — auto-discovered when the project is
+  opened, so you can tell your agent "self-host this on my domain" and it drives
+  `make setup` (mode choice, Cloudflare inputs, run, verify) under the same
+  secret-hygiene rules.
+
 ## [0.13.6] - 2026-07-13
 
 ### Documentation

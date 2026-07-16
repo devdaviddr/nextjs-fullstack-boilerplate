@@ -60,6 +60,11 @@ pnpm dev                    # http://localhost:3000
 Sign in with the demo account, or register a new one at `/register`.
 For the installable PWA (service worker is production-only): `pnpm build && pnpm start`.
 
+**Deploy it to your own domain** — one guided command takes a fresh clone to a
+live app behind a Cloudflare Tunnel (HTTPS, no open ports): `make setup`. Or let
+your AI agent do it: a **`self-host` skill** ships for both Claude Code and
+opencode (`/self-host`). See **[Self-hosting](docs/self-hosting.md)**.
+
 ## Documentation
 
 | Doc                                         | What's inside                                                |
@@ -72,6 +77,7 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 📱 **[PWA & App Shell](docs/pwa.md)**       | Manifest, service worker strategy, icons, responsive shell   |
 | 🔔 **[Web Push](docs/push.md)**             | VAPID setup, subscribe/send, service-worker handlers         |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
+| 📦 **[Self-hosting](docs/self-hosting.md)** | One-command `make setup` — clone to live on your own domain  |
 | 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |
 | ⚙️ **[CI/CD](docs/ci-cd.md)**               | GitHub Actions pipeline, quality gates, E2E + Docker jobs    |
 | 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite   |

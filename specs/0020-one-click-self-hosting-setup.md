@@ -1,7 +1,7 @@
 ---
 id: 0020
 title: One-click self-hosting setup
-status: Proposed # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
+status: In Progress # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
 release: '—' # e.g. v0.14.0 once shipped
 created: 2026-07-16
 updated: 2026-07-16
@@ -93,6 +93,12 @@ people _read about_ and one they _run_.
 - **FR9** — **Summary**: end by printing the live URL, the admin login, and the
   next-step commands (logs, stop, teardown), plus a one-line teardown pointer
   (`make tunnel-destroy` / `docker compose … down -v`).
+- **FR10** — **AI-agent skills**: ship a `self-host` [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
+  for both **Claude Code** (`.claude/skills/self-host/SKILL.md`) and **opencode**
+  (`.opencode/skills/self-host/SKILL.md`) so a user can tell their agent "self-host
+  this" and have it drive `make setup` (pick mode, collect Cloudflare inputs, run,
+  verify). The skill is a thin runbook over the wizard — same secret-hygiene rules,
+  no bypass of any documented step.
 
 ### Non-functional
 
@@ -139,8 +145,12 @@ preflight ─▶ secrets(.env, AUTH_SECRET) ─▶ mode?
   [backups.md](../docs/backups.md)), and troubleshooting. `docs/deployment.md`
   stays as the **reference** (per-command detail); `self-hosting.md` is the
   **journey** and links into it rather than duplicating.
+- `.claude/skills/self-host/SKILL.md` + `.opencode/skills/self-host/SKILL.md`
+  (new) — identical `self-host` Agent Skills; a runbook that maps the user's
+  intent to the right `make setup` invocation. Auto-discovered by each tool when
+  the project is opened; no install step.
 - `README.md` — add a "Self-hosting" doc-table row and a one-liner in Quick start
-  ("Deploy it: `make setup`").
+  ("Deploy it: `make setup`"), and note the `self-host` agent skill.
 - `CHANGELOG.md` — Unreleased entry on ship.
 
 **Reuse, explicitly:** `docker-compose.prod.yml`, `docker-compose.tunnel.yml`,
@@ -172,6 +182,9 @@ and the ingress target stays `http://app:3000` (Compose service name), never
       flow unattended.
 - [ ] `docs/self-hosting.md` walks a non-expert from clone to live domain and is
       linked from `README.md`.
+- [ ] The `self-host` skill is present for both Claude Code and opencode, is
+      discovered automatically on opening the project, and drives a successful
+      `make setup` end to end (verified at least in quick mode).
 
 ## Security & privacy
 
@@ -215,4 +228,7 @@ and the ingress target stays `http://app:3000` (Compose service name), never
 - Related: [0009 — Automated backups](0009-automated-backups.md) (day-2 operations
   the guide links to).
 - Will add on implementation: `scripts/setup.sh`, `Makefile` `setup:` target,
-  `docs/self-hosting.md`, README + CHANGELOG entries.
+  `docs/self-hosting.md`, `.claude/skills/self-host/` + `.opencode/skills/self-host/`,
+  README + CHANGELOG entries.
+- [Anthropic Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
+  — the shared `SKILL.md` format both Claude Code and opencode consume.
