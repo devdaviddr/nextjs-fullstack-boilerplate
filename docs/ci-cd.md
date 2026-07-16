@@ -68,6 +68,12 @@ on every `main` merge, a pinned semver never moves — `stable` moves exactly wh
 release is cut. Any `v*` push moves it (including an old tag re-pushed), so roll
 back by pinning `APP_TAG` to a semver, not by re-pushing old tags.
 
+The `release` job also **creates the GitHub Release entry** so the Releases page
+never drifts from the tags: notes are this version's `CHANGELOG.md` section, and
+the title is the annotated tag's subject (`git tag -a vX.Y.Z -m "short title"` →
+"vX.Y.Z — short title"; a lightweight tag gets the bare version). Re-runs skip an
+existing release.
+
 Because the re-tagged image carries `main`'s baked `APP_VERSION=main`, the deployed
 version is applied at **runtime** from the tag the box pulled — `APP_VERSION:
 ${APP_TAG}` on the `app` service in `docker-compose.deploy.yml` (with `APP_GIT_SHA`
