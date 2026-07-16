@@ -8,7 +8,7 @@ A production-grade starting point for full-stack web apps — authentication, da
 
 ### Quick Stats
 
-- **Version:** 0.13.6
+- **Version:** 0.15.0
 - **License:** MIT
 - **Type:** Full-stack Next.js 16 boilerplate
 - **Target:** Single-box production (Docker + Cloudflare Tunnel)
@@ -19,7 +19,7 @@ A production-grade starting point for full-stack web apps — authentication, da
 | ---------------- | -------------- | --------------------- |
 | Framework        | Next.js        | 16.2.10               |
 | Runtime          | React          | 19.2.7                |
-| TypeScript       | 5.9.3          |
+| Language         | TypeScript     | 5.9.3                 |
 | Database         | PostgreSQL     | 17                    |
 | Auth             | Auth.js v5     | 5.0.0-beta.31         |
 | Password Hashing | Argon2id       | @node-rs/argon2 2.0.2 |
@@ -40,7 +40,7 @@ A production-grade starting point for full-stack web apps — authentication, da
 
 #### Security
 
-- Rate limiting (auth endpoints)
+- Rate limiting (auth endpoints; per-account + global per-IP login cap)
 - CSP with per-request nonce
 - HSTS + security headers
 - Edge-protected routes (proxy.ts)
@@ -77,7 +77,10 @@ A production-grade starting point for full-stack web apps — authentication, da
 
 #### Deployment
 
+- One-click self-hosting wizard (`make setup`)
 - Cloudflare Tunnel (no open ports)
-- Multi-stage Dockerfile
-- Automated backups
+- Multi-stage, multi-arch Dockerfile (amd64 + arm64)
+- Continuous deployment via GHCR image pull (`make deploy`)
+- macOS boot persistence for always-on Mac minis (`make autostart`)
+- Automated Postgres + MinIO backups
 - GitHub Actions CI/CD

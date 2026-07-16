@@ -103,7 +103,7 @@ pnpm db:studio      # visual DB browser
 **Key files:**
 
 - `src/db/migrate.ts:23` - Migration runner (Docker entrypoint)
-- `src/db/seed.ts:68` - Idempotent demo user seed
+- `src/db/seed.ts` - Idempotent seed (roles admin/member/viewer + demo admin user)
 
 ### Important Features
 

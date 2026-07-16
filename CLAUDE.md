@@ -76,9 +76,12 @@ Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
   (copy `specs/TEMPLATE.md`, status `Proposed` → `Accepted` → `Shipped`). See
   [`specs/README.md`](specs/README.md).
 - **Trunk-based.** `main` is the only long-lived branch (no `develop`).
-  Feature work branches off `main` as `feature/<slug>`, PRs back into `main`,
-  and the merge itself is the release — bump version, update `CHANGELOG.md`,
-  tag (`vX.Y.Z`). Pre-1.0.
+  Feature work branches off `main` as `feature/<slug>` and PRs back into
+  `main`. A **release is a `vX.Y.Z` tag on a `main` commit** — bump the version,
+  update `CHANGELOG.md`, then tag. The tagged commit can be a `Release vX.Y.Z`
+  merge commit (the style through v0.13.6) or a plain commit on `main` (v0.14.0+
+  tag directly, no release-merge commit); both are fine — the tag is what
+  defines the release, and pushing a `v*` tag is what triggers deploy. Pre-1.0.
 - **Conventional Commits**, enforced by a commitlint `commit-msg` hook. Keep
   commit **body lines ≤ 100 characters**. A `pre-commit` hook runs lint-staged.
 - Update `CHANGELOG.md` (Keep a Changelog) for user-facing changes.

@@ -18,8 +18,8 @@ Two workflows run on every push and pull request to `main`:
 │           → build → Playwright (uploads report artifact)     │
 │ docker  : needs quality+e2e; per-arch native build (amd64 +   │
 │           arm64) → push by digest                             │
-│ merge   : assemble multi-arch manifest → publish 2 GHCR images │
-│           (app + migrate) on main/tags; PRs build only        │
+│ docker-merge : assemble multi-arch manifest → publish 2 GHCR  │
+│           images (app + migrate) on main/tags; PRs build only  │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
 │ .github/workflows/codeql.yml  (push / PR → main · weekly)   │
@@ -267,7 +267,7 @@ See [deployment.md](deployment.md) for complete Cloudflare Tunnel setup:
 
 - **Quick tunnel:** `make tunnel-quick` (no account)
 - **Guided:** Cloudflare dashboard (requires account)
-- **Automated:** Terraform (`make tunnel-provision && make tunnel-up`)
+- **Automated:** Terraform (`make tunnel-provision`, set `AUTH_URL`, then `make tunnel-up`)
 
 ### Test Scripts
 
@@ -312,12 +312,12 @@ docker compose logs
 # Follow logs
 docker compose logs -f
 
-# Database migration logs
-pnpm db:generate
+# Apply pending database migrations
 pnpm db:migrate
 
-# MinIO status
-pnpm dlx @minio/minio-client mc admin info local
+# MinIO status (uses the minio/mc Docker image, not an npm package)
+docker run --rm --network host --entrypoint /bin/sh minio/mc \
+  -c "mc alias set local http://localhost:9000 minioadmin minioadmin && mc admin info local"
 ```
 
 ### Best Practices
@@ -325,7 +325,7 @@ pnpm dlx @minio/minio-client mc admin info local
 1. **Test coverage:** Keep unit test coverage >80%
 2. **Isolation:** Each test should be self-contained
 3. **Environment:** Use `.env.example` as reference
-4. **Versioning:** Test against multiple Node versions in CI (see matrix)
+4. **Versioning:** CI runs on a single pinned Node version (22); bump it in the workflow when upgrading
 5. **Backups:** Always verify restore procedures before production deployment
 
 ### Maintenance

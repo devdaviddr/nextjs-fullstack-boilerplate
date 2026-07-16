@@ -80,4 +80,4 @@ src/
 - `src/lib/auth/rbac.ts` - Role guards
 - `src/db/schema.ts` - Database schema
 - `src/db/migrate.ts:23` - Migration runner
-- `src/db/seed.ts:68` - Seed script
+- `src/db/seed.ts` - Seed script (roles + demo admin user)
