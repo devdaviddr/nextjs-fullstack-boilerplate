@@ -156,6 +156,73 @@ and let the agent trigger it.
 
 ---
 
+## Continuous deployment
+
+`make setup` gets you live the first time; **continuous deployment** keeps a
+running box up to date as you push new code. CI already builds a production image
+on every green run — CD just ships it. Because the box is **outbound-only** (the
+tunnel opens no inbound ports), both paths below are **pull-based**: the box
+reaches out for the new image; nothing reaches in.
+
+On merge to `main` (and on `v*` release tags), [`ci.yml`](../.github/workflows/ci.yml)
+publishes two images to the GitHub Container Registry, **only after `quality` +
+`e2e` pass**:
+
+- `ghcr.io/<owner>/<repo>` — the app (production `runner` image).
+- `ghcr.io/<owner>/<repo>/migrate` — the migrator (`builder` image; the app image
+  can't run migrations itself).
+
+### Tier B (recommended) — pull with `make deploy`
+
+Point the box at the published image and update with one command. In the box's
+`.env`:
+
+```bash
+APP_IMAGE="ghcr.io/your-org/nextjs-fullstack-boilerplate"
+APP_TAG="latest"        # or pin a release, e.g. v0.14.0
+```
+
+Then, to update:
+
+```bash
+make deploy    # docker compose pull → up -d  (prod + deploy + tunnel overlays)
+```
+
+`make deploy` pulls both images, runs the one-shot **migrate** (it gates the app
+via `depends_on`, so schema changes apply **before** the new app starts), then
+restarts the app behind the tunnel — **no building on the box**. Run it by hand,
+or from `cron` / a `launchd` timer for scheduled updates. If the package is
+private, `docker login ghcr.io` once on the box with a read-only PAT.
+
+**Rollback** is just re-pinning: set `APP_TAG` to the previous version (or a
+commit `sha` tag) and run `make deploy` again.
+
+### Tier C (optional) — push-button on tag, via a self-hosted runner
+
+For true "tag a release → it deploys itself", register your box as a **GitHub
+self-hosted runner** and enable the shipped [`deploy.yml`](../.github/workflows/deploy.yml):
+
+1. Add a self-hosted runner on the box (GitHub → Settings → Actions → Runners).
+   The runner **dials out** to GitHub, so it works behind the tunnel.
+2. Set the repo variable `SELF_HOSTED_DEPLOY = true` (Settings → Secrets and
+   variables → Actions → Variables). Until you do, `deploy.yml` is skipped.
+3. Push a `v*` tag — the runner runs `make deploy` on the box.
+
+> ⚠️ A self-hosted runner executes workflow code on your network. Use it only on
+> a **private** repo (or one where you trust every tag), and prefer an
+> **ephemeral** runner. Tier B (pull) avoids this entirely — it's the default for
+> a reason.
+
+### Note on Watchtower
+
+[Watchtower](https://containrrr.dev/watchtower/) can auto-pull the updated `app`
+container, but it **won't run the one-shot `migrate`** — so it silently skips
+schema changes and is only safe for migration-free releases. Prefer `make deploy`,
+which always migrates first. If you use Watchtower anyway, run migrations
+yourself on any release that changes the schema.
+
+---
+
 ## Day-2 operations
 
 ```bash

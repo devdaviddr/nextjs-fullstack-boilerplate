@@ -1,10 +1,11 @@
 # Cloudflare Tunnel deployment helpers. See docs/deployment.md.
 COMPOSE := docker compose -f docker-compose.prod.yml
+DEPLOY  := docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml -f docker-compose.tunnel.yml
 TF      := terraform -chdir=infra/cloudflare
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup tunnel-quick tunnel-provision tunnel-token tunnel-up tunnel-down tunnel-verify tunnel-destroy
+.PHONY: help setup deploy tunnel-quick tunnel-provision tunnel-token tunnel-up tunnel-down tunnel-verify tunnel-destroy
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -12,6 +13,10 @@ help: ## Show this help
 
 setup: ## Guided one-click self-hosting (secrets → tunnel → seed → verify)
 	@./scripts/setup.sh
+
+deploy: ## Pull the published GHCR image + migrate + restart behind the tunnel (needs APP_IMAGE)
+	$(DEPLOY) pull
+	$(DEPLOY) up -d
 
 tunnel-quick: ## Ephemeral public URL, no account (prints the trycloudflare.com URL)
 	$(COMPOSE) -f docker-compose.quick-tunnel.yml up --build

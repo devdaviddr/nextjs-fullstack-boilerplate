@@ -16,18 +16,25 @@ Two workflows run on every push and pull request to `main`:
 │           · pnpm audit (non-blocking)                        │
 │ e2e     : Postgres service + MinIO + Mailpit → migrate/seed   │
 │           → build → Playwright (uploads report artifact)     │
-│ docker  : buildx production image (build only, not pushed)   │
+│ docker  : needs quality+e2e → build; publish 2 images to GHCR │
+│           (app + migrate) on main/tags; PRs build only        │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
 │ .github/workflows/codeql.yml  (push / PR → main · weekly)   │
 ├─────────────────────────────────────────────────────────────┤
 │ analyze : CodeQL security-and-quality (javascript-typescript)│
 └─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ .github/workflows/deploy.yml  (release tags · opt-in)       │
+├─────────────────────────────────────────────────────────────┤
+│ deploy  : `make deploy` on a self-hosted runner, gated by    │
+│           vars.SELF_HOSTED_DEPLOY (off by default)           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-The three `ci.yml` jobs run independently — `e2e` and `docker` do **not**
-depend on `quality`. There is no deploy job; deployment is manual (see
-[deployment.md](deployment.md)).
+`quality` and `e2e` run independently; **`docker` now needs both** (it only
+publishes tested images). Publishing and the opt-in `deploy.yml` are the
+continuous-deployment story — see [self-hosting.md](self-hosting.md#continuous-deployment).
 
 ### Quality Gates
 
@@ -142,10 +149,18 @@ run in `email-flow.spec.ts`. `AUTH_SECRET` is a throwaway CI value.
 
 #### `docker` job
 
-Builds the production image with `docker/build-push-action@v6` and Buildx,
-using GitHub Actions cache (`cache-from`/`cache-to: type=gha`). The image is
-**built but not pushed** (`push: false`, tag `nextjs-fullstack-boilerplate:ci`) —
-it verifies the Dockerfile builds; wire in a registry push when you deploy.
+`needs: [quality, e2e]` — it only publishes **tested** images. Builds with
+`docker/build-push-action@v6` + Buildx (GitHub Actions cache) and publishes two
+images to GHCR via `docker/metadata-action`:
+
+- `ghcr.io/<owner>/<repo>` — the production `runner` target (the app).
+- `ghcr.io/<owner>/<repo>/migrate` — the `builder` target, the only one that can
+  run `pnpm db:migrate` (the runner standalone image has no tsx/source).
+
+Tags: commit `sha`, the branch, semver on `v*` tags, and `latest` on the default
+branch. **Pull requests build both images but never push** (`push:` is false off
+`main`/tags, and login is skipped) so forks stay safe. Uses the workflow
+`GITHUB_TOKEN` with `packages: write`.
 
 #### CodeQL
 
@@ -153,9 +168,13 @@ it verifies the Dockerfile builds; wire in a registry push when you deploy.
 `javascript-typescript` sources on every push/PR and weekly (Monday 06:00 UTC),
 publishing results to the repository's Security tab.
 
-> **Note:** the three `ci.yml` jobs are independent — `e2e` and `docker` do not
-> declare `needs: quality`, so they run in parallel with it rather than gating
-> on it.
+#### `deploy.yml` (opt-in continuous deployment)
+
+Skipped unless the repo variable `SELF_HOSTED_DEPLOY == 'true'`. When enabled, it
+runs `make deploy` on a **self-hosted runner** on your box (which dials out to
+GitHub — tunnel-friendly) on release tags, pulling the freshly published images,
+migrating, and restarting. Full design and the pull-based alternative:
+[self-hosting.md → Continuous deployment](self-hosting.md#continuous-deployment).
 
 ### Local Development Testing
 

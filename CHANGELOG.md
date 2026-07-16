@@ -23,6 +23,14 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   opened, so you can tell your agent "self-host this on my domain" and it drives
   `make setup` (mode choice, Cloudflare inputs, run, verify) under the same
   secret-hygiene rules.
+- **Continuous deployment for self-hosted instances** — CI now publishes the app +
+  migrator images to GHCR (on `main`/tags, after tests pass), a
+  `docker-compose.deploy.yml` overlay + `make deploy` pull and run them (migrations
+  first, no build on the box), and an opt-in self-hosted-runner
+  [`deploy.yml`](.github/workflows/deploy.yml) gives push-button deploys on release
+  tags. Pull-based to respect the tunnel's outbound-only model. See
+  [spec 0021](specs/0021-continuous-deployment-self-hosted.md) and
+  [Self-hosting → Continuous deployment](docs/self-hosting.md#continuous-deployment).
 
 ## [0.13.6] - 2026-07-13
 

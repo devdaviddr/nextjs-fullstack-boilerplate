@@ -1,0 +1,20 @@
+# Overlay for docker-compose.prod.yml — run PRE-BUILT images from GHCR instead of
+# building on the box (see docs/self-hosting.md → "Continuous deployment").
+#
+#   APP_IMAGE=ghcr.io/<owner>/<repo> APP_TAG=latest \
+#     docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml pull
+#   … up -d        (or: make deploy — which also layers the tunnel overlay)
+#
+# `!reset null` clears the base `build:` key so Compose runs the image rather than
+# rebuilding. The one-shot `migrate` service uses the `builder`-target image
+# (`<repo>/migrate`) — the only one that can run `pnpm db:migrate`.
+services:
+  app:
+    build: !reset null
+    image: ${APP_IMAGE:?set APP_IMAGE, e.g. ghcr.io/owner/repo}:${APP_TAG:-latest}
+    pull_policy: always
+
+  migrate:
+    build: !reset null
+    image: ${APP_IMAGE:?set APP_IMAGE, e.g. ghcr.io/owner/repo}/migrate:${APP_TAG:-latest}
+    pull_policy: always

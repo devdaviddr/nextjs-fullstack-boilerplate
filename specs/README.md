@@ -62,6 +62,7 @@ other — one isn't a substitute for the other.
 | [0018](0018-profile-photo-upload.md)              | Profile photo upload                  | Shipped     | v0.7.0          |
 | [0019](0019-seo-opengraph-metadata.md)            | SEO & OpenGraph metadata              | Shipped     | v0.9.0          |
 | [0020](0020-one-click-self-hosting-setup.md)      | One-click self-hosting setup          | In Progress | —               |
+| [0021](0021-continuous-deployment-self-hosted.md) | Continuous deployment (self-hosted)   | In Progress | —               |
 
 > Specs 0001–0004 were written retroactively to document the decisions behind
 > the existing releases; SDD is the going-forward process (0005 onward).
