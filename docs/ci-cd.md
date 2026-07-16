@@ -16,7 +16,9 @@ Two workflows run on every push and pull request to `main`:
 │           · pnpm audit (non-blocking)                        │
 │ e2e     : Postgres service + MinIO + Mailpit → migrate/seed   │
 │           → build → Playwright (uploads report artifact)     │
-│ docker  : needs quality+e2e → build; publish 2 images to GHCR │
+│ docker  : needs quality+e2e; per-arch native build (amd64 +   │
+│           arm64) → push by digest                             │
+│ merge   : assemble multi-arch manifest → publish 2 GHCR images │
 │           (app + migrate) on main/tags; PRs build only        │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
@@ -148,19 +150,22 @@ uploads the `playwright-report/` as an artifact (`if: ${{ !cancelled() }}`,
 `SMTP_HOST=127.0.0.1`, `SMTP_PORT=1025`) so the reset/verification round-trips
 run in `email-flow.spec.ts`. `AUTH_SECRET` is a throwaway CI value.
 
-#### `docker` job
+#### `docker` job (+ `docker-merge`)
 
-`needs: [quality, e2e]` — it only publishes **tested** images. Builds with
-`docker/build-push-action@v6` + Buildx (GitHub Actions cache) and publishes two
-images to GHCR via `docker/metadata-action`:
+`needs: [quality, e2e]` — it only publishes **tested** images, and they're
+**multi-arch** (`linux/amd64` + `linux/arm64`) so they run on Apple Silicon Mac
+minis as well as amd64 servers. To avoid slow QEMU emulation, `docker` is a
+matrix that builds each arch on its **own native runner** (`ubuntu-latest` +
+`ubuntu-24.04-arm`) and pushes by digest; a `docker-merge` job then assembles the
+per-arch digests into one manifest per image via `docker/metadata-action`:
 
 - `ghcr.io/<owner>/<repo>` — the production `runner` target (the app).
 - `ghcr.io/<owner>/<repo>/migrate` — the `builder` target, the only one that can
   run `pnpm db:migrate` (the runner standalone image has no tsx/source).
 
 Tags: commit `sha`, the branch, semver on `v*` tags, and `latest` on the default
-branch. **Pull requests build both images but never push** (`push:` is false off
-`main`/tags, and login is skipped) so forks stay safe. Uses the workflow
+branch. **Pull requests build both arches cache-only and never push** (login is
+skipped; `docker-merge` is gated to non-PR) so forks stay safe. Uses the workflow
 `GITHUB_TOKEN` with `packages: write`.
 
 #### CodeQL
