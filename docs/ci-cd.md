@@ -114,7 +114,8 @@ summary below describes what each job actually does — consult the workflow
 files for the authoritative YAML.
 
 Both workflows trigger on `push` and `pull_request` to `main` (CodeQL also runs
-on a weekly `schedule`). `ci.yml` sets `concurrency` so an in-progress run is
+on a weekly `schedule`); `ci.yml` additionally runs on `v*` tags, which publish
+the semver-tagged image. `ci.yml` sets `concurrency` so an in-progress run is
 cancelled when a newer commit lands on the same ref, and disables Next.js
 telemetry via `NEXT_TELEMETRY_DISABLED`. All jobs run on `ubuntu-latest` with
 **Node 22** (no version matrix) and pnpm via `pnpm/action-setup` (version taken
