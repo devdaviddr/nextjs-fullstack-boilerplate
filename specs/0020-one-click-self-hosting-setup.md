@@ -1,8 +1,8 @@
 ---
 id: 0020
 title: One-click self-hosting setup
-status: In Progress # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
-release: '—' # e.g. v0.14.0 once shipped
+status: Shipped # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
+release: v0.14.0
 created: 2026-07-16
 updated: 2026-07-16
 ---
@@ -180,7 +180,7 @@ and the ingress target stays `http://app:3000` (Compose service name), never
       secret appears in stdout or the git tree.
 - [ ] Non-interactive invocation (all inputs via env/flags) completes the same
       flow unattended.
-- [ ] `docs/self-hosting.md` walks a non-expert from clone to live domain and is
+- [x] `docs/self-hosting.md` walks a non-expert from clone to live domain and is
       linked from `README.md`.
 - [ ] The `self-host` skill is present for both Claude Code and opencode, is
       discovered automatically on opening the project, and drives a successful

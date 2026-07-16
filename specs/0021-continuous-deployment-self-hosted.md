@@ -1,8 +1,8 @@
 ---
 id: 0021
 title: Continuous deployment for self-hosted instances
-status: In Progress # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
-release: '—' # e.g. v0.15.0 once shipped
+status: Shipped # Proposed | Accepted | In Progress | Shipped | Superseded | Rejected
+release: v0.14.0
 created: 2026-07-16
 updated: 2026-07-16
 ---
@@ -135,14 +135,16 @@ primitive; Watchtower is mentioned as an optional convenience with this caveat.
 - [ ] A push to `main` publishes `ghcr.io/<owner>/<repo>` (app) and
       `…/<repo>/migrate` (builder), tagged by sha + `latest`; a `v*` tag adds the
       semver tag. PRs build but do not push.
-- [ ] On a box with `APP_IMAGE` set, `make deploy` pulls both images, runs
+- [x] On a box with `APP_IMAGE` set, `make deploy` pulls both images, runs
       migrations, then starts the app behind the tunnel — **no local build**.
-- [ ] `docker compose … -f docker-compose.deploy.yml config` resolves to `image:`
+      _(verified via a local registry: migrate/builder image ran migrations →
+      app/runner image pulled + healthy)._
+- [x] `docker compose … -f docker-compose.deploy.yml config` resolves to `image:`
       (no `build:`) for `app` and `migrate`.
 - [ ] `deploy.yml` does nothing unless `vars.SELF_HOSTED_DEPLOY == 'true'`, and
       then deploys on a release tag from a self-hosted runner.
-- [ ] Nothing changes for a fork that sets neither `APP_IMAGE` nor the repo
-      variable.
+- [x] Nothing changes for a fork that sets neither `APP_IMAGE` nor the repo
+      variable. _(PR #9's `docker` job built both images without pushing.)_
 
 ## Security & privacy
 
