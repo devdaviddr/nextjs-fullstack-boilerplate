@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
+## [0.16.2] - 2026-07-16
+
+### Fixed
+
+- Deploy timer / autostart under launchd: the LaunchAgent ran with a bare `PATH`
+  (`/usr/bin:/bin`) that omits Homebrew, so `docker` (at `/opt/homebrew/bin`)
+  was unresolvable and every scheduled tick aborted at the readiness gate — even
+  after the 0.16.1 probe fix. The install now **bakes the operator's `PATH` into
+  the plist** and the scripts self-prepend the common Homebrew locations, so the
+  engine resolves whether invoked from a shell or from launchd. Re-run
+  `make deploy-timer` (or `make autostart`) to regenerate the plist. Found on the
+  live self-hosted box.
+- `scripts/setup.sh` preflight also switched from `docker info` to
+  `docker version` (same Podman-hang avoidance).
+
 ## [0.16.1] - 2026-07-16
 
 ### Fixed

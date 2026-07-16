@@ -99,7 +99,9 @@ version_ge() { # 0 if $1 >= $2 (dotted numeric)
 preflight() {
   step "Preflight checks"
   command -v docker >/dev/null 2>&1 || die "Docker is not installed. See https://docs.docker.com/get-docker/"
-  docker info >/dev/null 2>&1 || die "Docker daemon isn't running. Start Docker and re-run."
+  # `docker version` (not `docker info`, which can hang on some Podman machines)
+  # to confirm the engine is reachable.
+  docker version --format '{{.Server.Version}}' >/dev/null 2>&1 || die "Docker daemon isn't running. Start Docker and re-run."
   ok "Docker is running"
 
   local have

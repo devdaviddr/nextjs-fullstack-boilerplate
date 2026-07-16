@@ -27,6 +27,12 @@ LABEL="com.${REPO_NAME}.autostart"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
 LOG="$HOME/Library/Logs/${LABEL}.log"
 
+# launchd runs jobs with a bare PATH (/usr/bin:/bin) that omits Homebrew — where
+# `docker` usually lives on macOS. Prepend the common locations so the engine
+# resolves whether we're invoked from a shell or from launchd. (The installed
+# plist also bakes in the operator's PATH; this covers a hand-loaded plist too.)
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 usage() { sed -n '2,21p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
 # Readiness probe for the container engine. Uses `docker version` rather than
@@ -54,6 +60,10 @@ install_agent() {
     <string>boot</string>
     <string>${target}</string>
   </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>${PATH}</string>
+  </dict>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>${LOG}</string>
   <key>StandardErrorPath</key><string>${LOG}</string>
