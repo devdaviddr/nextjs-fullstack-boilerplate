@@ -137,8 +137,8 @@ primitive; Watchtower is mentioned as an optional convenience with this caveat.
       semver tag. PRs build but do not push.
 - [ ] On a box with `APP_IMAGE` set, `make deploy` pulls both images, runs
       migrations, then starts the app behind the tunnel — **no local build**.
-- [ ] `docker compose -f docker-compose.prod.yml -f docker-compose.deploy.yml
-    config` resolves to `image:` (no `build:`) for `app` and `migrate`.
+- [ ] `docker compose … -f docker-compose.deploy.yml config` resolves to `image:`
+      (no `build:`) for `app` and `migrate`.
 - [ ] `deploy.yml` does nothing unless `vars.SELF_HOSTED_DEPLOY == 'true'`, and
       then deploys on a release tag from a self-hosted runner.
 - [ ] Nothing changes for a fork that sets neither `APP_IMAGE` nor the repo
