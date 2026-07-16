@@ -17,6 +17,9 @@ env:
 jobs:
   quality:
     name: Lint · Typecheck · Unit
+    # A release tag re-uses the image already built + tested on the `main` push
+    # for the same commit (see the `release` job), so it does NOT re-run these.
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +39,7 @@ jobs:
 
   e2e:
     name: E2E (Playwright)
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -123,9 +127,16 @@ jobs:
   # digest, then `docker-merge` assembles the multi-arch manifest. Publishing is
   # gated to non-PR events; PRs build both arches cache-only to prove they
   # compile without pushing (fork-safe).
+  #
+  # Gated on `quality` only (fast: lint/type/unit) so the ~2–3 min build overlaps
+  # the ~2 min e2e instead of queuing behind it — `docker-merge` still `needs` e2e,
+  # so nothing gets a human tag until the full suite is green. Release tags don't
+  # build here at all; they re-tag this commit's already-published image (see
+  # the `release` job).
   docker:
     name: Build image (${{ matrix.platform }})
-    needs: [quality, e2e]
+    needs: [quality]
+    if: github.ref_type != 'tag'
     permissions:
       contents: read
       packages: write
@@ -219,8 +230,12 @@ jobs:
   # by metadata-action (sha / branch / semver on tags / latest on main).
   docker-merge:
     name: Publish multi-arch manifest
-    needs: docker
-    if: github.event_name != 'pull_request'
+    # `needs` e2e as well as docker, so the tag/publish only happens once BOTH the
+    # build and the full test suite are green (the build itself only needed
+    # `quality`). Skipped for PRs (build-only) and for tags (the `release` job
+    # re-tags instead of rebuilding).
+    needs: [docker, e2e]
+    if: github.event_name != 'pull_request' && github.ref_type != 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -286,3 +301,62 @@ jobs:
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.MIGRATE_IMAGE }}@sha256:%s ' *)
           docker buildx imagetools inspect ${{ env.MIGRATE_IMAGE }}:${{ steps.meta-migrate.outputs.version }}
+
+  # A `v*` release tag does NOT rebuild. The tag sits on a commit that the `main`
+  # push already built, tested, and published (as `sha-<short>` + `latest`), so a
+  # rebuild would recompile a bit-identical image just to add the semver tag — the
+  # slowest part of the whole tag→live path. Instead we add the version tag to the
+  # existing multi-arch digest with `imagetools create` (a manifest op, ~30s).
+  #
+  # Version *identity* is applied at RUNTIME — the box sets APP_VERSION=${APP_TAG}
+  # via docker-compose.deploy.yml, and APP_GIT_SHA stays baked (correct) in the
+  # image — so re-tagging needs no rebuild to keep Settings → Build accurate.
+  # See spec 0024. The wait loop makes this tag inherit `main`'s full test gate:
+  # the source image only exists if `main`'s quality+e2e+build all passed.
+  release:
+    name: Tag release image (no rebuild)
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      APP_IMAGE: ghcr.io/${{ github.repository }}
+      MIGRATE_IMAGE: ghcr.io/${{ github.repository }}/migrate
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve version + source tags
+        run: |
+          # `type=semver,pattern={{version}}` publishes the unprefixed semver, so
+          # strip the leading `v` to match (v0.16.3 → 0.16.3). The source is the
+          # immutable per-commit tag `main` published: `sha-` + short (7) SHA.
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "SHA_TAG=sha-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Wait for the main-built image (same commit) to be published
+        run: |
+          echo "Waiting for ${APP_IMAGE}:${SHA_TAG} + ${MIGRATE_IMAGE}:${SHA_TAG}"
+          echo "(published by the main push for commit ${GITHUB_SHA:0:7})…"
+          for i in $(seq 1 40); do
+            if docker buildx imagetools inspect "${APP_IMAGE}:${SHA_TAG}" >/dev/null 2>&1 \
+              && docker buildx imagetools inspect "${MIGRATE_IMAGE}:${SHA_TAG}" >/dev/null 2>&1; then
+              echo "✓ source images present"; exit 0
+            fi
+            echo "  …not published yet (attempt $i/40) — sleeping 20s"; sleep 20
+          done
+          echo "::error::Timed out waiting for ${SHA_TAG}. The main build for this commit must go green first — it publishes the tested image this tag re-tags. Re-run this job once main is green, or push the tag after main's CI passes."
+          exit 1
+
+      - name: Re-tag app + migrate with the release version
+        run: |
+          docker buildx imagetools create -t "${APP_IMAGE}:${VERSION}"     "${APP_IMAGE}:${SHA_TAG}"
+          docker buildx imagetools create -t "${MIGRATE_IMAGE}:${VERSION}" "${MIGRATE_IMAGE}:${SHA_TAG}"
+          echo "── app ${VERSION} ──";     docker buildx imagetools inspect "${APP_IMAGE}:${VERSION}"
+          echo "── migrate ${VERSION} ──"; docker buildx imagetools inspect "${MIGRATE_IMAGE}:${VERSION}"

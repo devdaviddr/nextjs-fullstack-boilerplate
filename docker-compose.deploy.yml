@@ -13,6 +13,12 @@ services:
     build: !reset null
     image: ${APP_IMAGE:?set APP_IMAGE, e.g. ghcr.io/owner/repo}:${APP_TAG:-latest}
     pull_policy: always
+    # A `v*` release tag re-tags the image `main` built (baked APP_VERSION=`main`)
+    # rather than rebuilding, so the deployed version is applied HERE at runtime
+    # from the tag the box pulled. Settings → Build then shows the real release.
+    # APP_GIT_SHA stays baked in the image (it's the correct commit either way).
+    environment:
+      APP_VERSION: ${APP_TAG:-latest}
 
   migrate:
     build: !reset null

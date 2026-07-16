@@ -164,13 +164,18 @@ on every green run — CD just ships it. Because the box is **outbound-only** (t
 tunnel opens no inbound ports), both paths below are **pull-based**: the box
 reaches out for the new image; nothing reaches in.
 
-On merge to `main` (and on `v*` release tags), [`ci.yml`](../.github/workflows/ci.yml)
-publishes two images to the GitHub Container Registry, **only after `quality` +
-`e2e` pass**:
+On merge to `main`, [`ci.yml`](../.github/workflows/ci.yml) publishes two images to
+the GitHub Container Registry, **only after `quality` + `e2e` pass**:
 
 - `ghcr.io/<owner>/<repo>` — the app (production `runner` image).
 - `ghcr.io/<owner>/<repo>/migrate` — the migrator (`builder` image; the app image
   can't run migrations itself).
+
+A `v*` **release tag does not rebuild** — it re-tags the image `main` already built
+for that commit with the semver (~30s), applying the deployed version at runtime
+from `APP_TAG`. For the fastest release, push the tag **after** `main`'s CI is green
+(see [docs/ci-cd.md → Release fast-path](ci-cd.md#release-fast-path--a-v-tag-re-tags-it-does-not-rebuild)
+and [spec 0024](../specs/0024-faster-time-to-deploy.md)).
 
 ### Tier B (recommended) — pull with `make deploy`
 
@@ -197,17 +202,25 @@ is private, `docker login ghcr.io` once on the box with a read-only PAT.
 interval so new releases roll out unattended:
 
 ```bash
-make deploy-timer                              # every 300s (5 min)
-./scripts/macos-deploy-timer.sh install 600    # or a custom interval
+make deploy-timer                              # every 60s (digest-skipped)
+./scripts/macos-deploy-timer.sh install 300    # or a custom interval (≥ 60s)
 ./scripts/macos-deploy-timer.sh status         # is it loaded?
 ./scripts/macos-deploy-timer.sh uninstall
 ```
 
 Each tick refreshes the checkout (`git pull --ff-only`, best-effort), copies the
 operator's off-checkout `.env` from `~/.config/nextjs-fullstack-boilerplate/.env`
-(override with `DEPLOY_ENV_FILE`) into the project dir, then runs `make deploy`.
-With `APP_TAG=latest`, the box lands on each new release within one interval; you
-can watch which build is live in the app's **Settings → Build** card.
+(override with `DEPLOY_ENV_FILE`) into the project dir, then **checks whether the
+published app image actually changed** — it refreshes only that image's manifest and
+compares its digest to the last-deployed one (`~/.config/<repo>/.last-deployed-image`).
+An unchanged tick exits immediately; only a new digest triggers the full
+`make deploy` (pull + migrate + recreate). That makes the short 60s interval nearly
+free, so the box lands a new release within ~a minute; watch which build is live in
+the app's **Settings → Build** card.
+
+> Already running an older timer? Re-run `make deploy-timer` to regenerate the
+> plist at the new default interval (the old 300s interval is baked into the
+> installed plist until you reinstall).
 
 **Rollback** is just re-pinning: set `APP_TAG` to the previous version (or a
 commit `sha` tag) and run `make deploy` again.
