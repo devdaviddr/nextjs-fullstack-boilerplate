@@ -4,7 +4,7 @@
 
 PostgreSQL 17 accessed through [Drizzle ORM](https://orm.drizzle.team) with a `postgres-js` driver.
 
-## Entity-relationship diagram
+### Entity-Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -77,91 +77,65 @@ erDiagram
     }
 ```
 
-## Schema
+### Schema Tables
 
-Defined in `src/db/schema.ts`. Tables follow the Auth.js Drizzle-adapter conventions — the adapter is wired up for [OAuth](oauth.md).
+| Table                 | Purpose                                                   |
+| --------------------- | --------------------------------------------------------- |
+| `users`               | Accounts with password, email, invites, avatar            |
+| `accounts`            | OAuth provider links (GitHub/Google)                      |
+| `sessions`            | Database sessions (unused under JWT strategy)             |
+| `verification_tokens` | Single-use tokens for password reset & email verification |
+| `authenticators`      | WebAuthn/passkey credentials                              |
+| `roles`               | Roles: admin, member, viewer                              |
+| `user_roles`          | Many-to-many users ↔ roles                                |
+| `files`               | Uploaded file metadata + S3 storage                       |
+| `push_subscriptions`  | Web Push subscriptions per device                         |
 
-| Table                 | Purpose                                                                                                                                                                                                                                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`               | Accounts. `hashed_password` (null for OAuth-only or unclaimed invited users), `email_verified` (set by the [email flow](email.md)), `invite_token_hash` + `invite_expires` (single-use invite claim), `avatar_file_id` (FK → `files.id`, `set null` — current profile photo), timestamps, unique email index. |
-| `roles`               | Named roles (`admin`, `member`, `viewer`) — unique name + optional description.                                                                                                                                                                                                                               |
-| `user_roles`          | Many-to-many join of users ↔ roles (composite PK; cascades on user/role delete).                                                                                                                                                                                                                              |
-| `accounts`            | OAuth provider links (GitHub/Google) — populated by the Drizzle adapter. See [OAuth](oauth.md).                                                                                                                                                                                                               |
-| `sessions`            | Database sessions — unused under the JWT strategy, available if you switch (see [Architecture → Session strategy](architecture.md#session-strategy--revocation)).                                                                                                                                             |
-| `verification_tokens` | Single-use, SHA-256-hashed, `purpose`-scoped tokens for **password reset** and **email verification**. See [Email](email.md).                                                                                                                                                                                 |
-| `authenticators`      | WebAuthn/passkey credentials (schema present; feature not built).                                                                                                                                                                                                                                             |
-| `files`               | Uploaded-file registry — owner, S3 bucket key, original name, MIME type, size. See [Features → File uploads](features.md#file-uploads).                                                                                                                                                                       |
-| `push_subscriptions`  | Web Push subscriptions — one row per browser/device (`endpoint` unique). See [Features → Web Push](features.md).                                                                                                                                                                                              |
-
-Roles are read from a `roles: string[]` claim on the JWT — see
-[Features → Access control](features.md#access-control-rbac). The two invite
-columns on `users` back the passwordless
-[invite claim flow](features.md#invite-based-account-claim); the `verification_tokens`
-`token` and invite hashes store only a SHA-256 of the emailed value, never the
-raw token.
-
-Inferred types are exported for app code:
-
-```ts
-import type { User, NewUser } from '@/db/schema'
-```
-
-## The client
-
-`src/db/index.ts` exposes a single pooled client (`db`) stashed on `globalThis` in development so hot reloads don't exhaust connections. It is `server-only` — importing it from a client component is a build error.
-
-```ts
-import { db } from '@/db'
-import { users } from '@/db/schema'
-import { eq } from 'drizzle-orm'
-
-const user = await db.query.users.findFirst({
-  where: eq(users.email, email),
-})
-```
-
-## Migrations workflow
-
-Migrations are generated from the schema and **committed** under `drizzle/`.
+### Migration Workflow
 
 ```bash
-pnpm db:generate   # diff schema → new SQL migration in drizzle/
-pnpm db:migrate    # apply pending migrations (uses src/db/migrate.ts)
-pnpm db:push       # push schema directly, no migration file (prototyping only)
-pnpm db:studio     # open Drizzle Studio (visual browser)
+pnpm db:generate    # generates SQL migration
+pnpm db:migrate     # applies pending migrations
+pnpm db:push        # direct schema push (prototyping)
+pnpm db:studio      # visual DB browser
 ```
 
-**Workflow:** edit `src/db/schema.ts` → `pnpm db:generate` → review the SQL → commit it → `pnpm db:migrate`.
+**Key files:**
 
-In production, run `pnpm db:migrate` as a deploy step. The `migrate` service in `docker-compose.prod.yml` shows the one-shot pattern (runs before the app starts).
+- `src/db/migrate.ts:23` - Migration runner (Docker entrypoint)
+- `src/db/seed.ts:68` - Idempotent demo user seed
 
-## Seeding
+### Important Features
 
-`pnpm db:seed` inserts an idempotent demo user, creates the `admin` / `member` /
-`viewer` roles, and grants `admin` to that user:
+#### Role-Based Access Control
 
-```
-demo@example.com / Password123   (admin)
-```
+- Roles carried as `roles: string[]` claim on JWT (no DB round-trip to read)
+- Edge gating via `proxy.ts`
+- Server-side guards in `src/lib/auth/rbac.ts`
 
-Safe to run repeatedly — it no-ops if the user/role already exist. Never run the seed against production.
+#### File Storage
 
-## Connection string
+- MinIO (S3-compatible) for object storage
+- Postgres `files` table for metadata
+- Ownership-checked downloads
+- Profile photos support via `users.avatar_file_id`
 
-Set `DATABASE_URL` in `.env`. The local default (matching `docker-compose.yml`):
+#### Security Features
 
-```
-postgresql://postgres:postgres@localhost:5432/app?sslmode=disable
-```
+- Passwords stored with Argon2id
+- Email uniqueness enforced (case-insensitive)
+- Verification tokens stored as SHA-256 hashes
+- Invite-based account claim (passwordless)
 
-In production, point it at managed Postgres with TLS (`sslmode=require`).
+### Database Commands
 
-## Object storage (files)
+| Command             | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `pnpm docker:db`    | Start local Postgres                                 |
+| `pnpm docker:minio` | Start local MinIO with bucket                        |
+| `pnpm db:migrate`   | Apply migrations                                     |
+| `pnpm db:seed`      | Seed demo user (`demo@example.com` / `Password123` ) |
 
-Uploaded files are stored in **MinIO** (S3-compatible), not Postgres — the
-`files` table above only holds metadata + the bucket key. `pnpm docker:minio`
-starts it locally; the app is configured via `S3_ENDPOINT` /
-`S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` (see
-`.env.example`). MinIO has no public ingress in production
-(`docker-compose.prod.yml`) — the app is the only thing that talks to it, via
-`src/lib/storage/`. See [Features → File uploads](features.md#file-uploads).
+### Production Setup
+
+See [deployment.md](deployment.md) for production Docker configuration.

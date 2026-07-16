@@ -73,7 +73,9 @@ For the installable PWA (service worker is production-only): `pnpm build && pnpm
 | 🔔 **[Web Push](docs/push.md)**             | VAPID setup, subscribe/send, service-worker handlers         |
 | 🛠️ **[Usage & Development](docs/usage.md)** | Scripts, env vars, testing, Docker, extending the app        |
 | 🚀 **[Deployment](docs/deployment.md)**     | Cloudflare Tunnel — quick, guided, and Terraform paths       |
+| ⚙️ **[CI/CD](docs/ci-cd.md)**               | GitHub Actions pipeline, quality gates, E2E + Docker jobs    |
 | 💾 **[Backups](docs/backups.md)**           | Nightly Postgres + MinIO backups, restore runbook, offsite   |
+| 📄 **[Summary](docs/summary.md)**           | One-page project overview — stats, stack, what ships         |
 | 📐 **[Specs](specs/README.md)**             | Spec-driven development — one spec per feature/release       |
 
 ## Scripts
