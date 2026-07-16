@@ -14,8 +14,14 @@ help: ## Show this help
 setup: ## Guided one-click self-hosting (secrets → tunnel → seed → verify)
 	@./scripts/setup.sh
 
+# Pull the two GHCR images one at a time rather than a single parallel
+# `compose pull` — the all-services parallel pull hangs on some Podman machines,
+# and pulling only app+migrate avoids re-checking the Docker Hub base images
+# (postgres/minio/cloudflared) on every run (rate limits). `up -d` then recreates
+# app behind the tunnel (migrate one-shot runs first via depends_on).
 deploy: ## Pull the published GHCR image + migrate + restart behind the tunnel (needs APP_IMAGE)
-	$(DEPLOY) pull
+	$(DEPLOY) pull app
+	$(DEPLOY) pull migrate
 	$(DEPLOY) up -d
 
 deploy-timer: ## macOS: install a launchd timer that runs `make deploy` on an interval (Tier B pull; default 300s)

@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
+## [0.16.3] - 2026-07-16
+
+### Fixed
+
+- `make deploy` hung on some Podman machines: a single parallel
+  `docker compose pull` (all services at once) wedges at 0% CPU on Podman, so the
+  Tier B timer never completed a deploy. Now pulls the two GHCR images
+  (`app`, `migrate`) individually, then `up -d`. This also stops re-checking the
+  Docker Hub base images (postgres/minio/cloudflared) every run, avoiding Hub
+  rate limits on a short timer interval. Found on the live self-hosted box; the
+  individual-pull sequence was verified there end-to-end.
+
 ## [0.16.2] - 2026-07-16
 
 ### Fixed
