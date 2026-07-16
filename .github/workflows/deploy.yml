@@ -1,12 +1,19 @@
-# Opt-in continuous deployment to a SELF-HOSTED box (spec 0021, Tier C).
+# Opt-in continuous deployment to a SELF-HOSTED runner (spec 0021 Tier C).
 #
-# Disabled by default: the job is skipped unless the repo variable
-# SELF_HOSTED_DEPLOY == 'true' (Settings → Secrets and variables → Actions →
-# Variables). Enable it only with a self-hosted runner registered on your box —
-# the runner dials out to GitHub, so it works behind the outbound-only tunnel.
+# ⚠️  DO NOT ENABLE ON A PUBLIC REPO. A self-hosted runner on a public repo is
+# the configuration GitHub explicitly warns against: a fork pull request can add
+# a workflow that targets `runs-on: [self-hosted]` and, once its run is approved,
+# executes ARBITRARY CODE on your box / home LAN. The `SELF_HOSTED_DEPLOY` gate
+# below does NOT protect you — a malicious fork brings its own workflow file.
 #
-# Security: runs on release tags only, on your own runner. Keep the repo PRIVATE
-# (or trust every tag), and prefer an EPHEMERAL runner. See docs/self-hosting.md.
+# For PUBLIC repos use pull-based deploy (Tier B) instead: a scheduled
+# `make deploy` timer on the box (scripts/macos-deploy-timer.sh / `make
+# deploy-timer`). The box reaches OUT to GHCR; GitHub never runs your code on it.
+# See spec 0023 and docs/self-hosting.md.
+#
+# This workflow is disabled by default (skipped unless repo variable
+# SELF_HOSTED_DEPLOY == 'true'). Enable it ONLY on a PRIVATE/trusted repo, and
+# even then prefer an EPHEMERAL, low-privilege runner. See docs/self-hosting.md.
 name: Deploy (self-hosted)
 
 on:
