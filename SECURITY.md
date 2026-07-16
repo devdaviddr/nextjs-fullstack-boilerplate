@@ -21,7 +21,9 @@ Built-in protections (see [docs/architecture.md](docs/architecture.md#security-m
 
 - Argon2id password hashing; passwords never stored in plaintext.
 - HTTP-only, encrypted JWT session cookies (Auth.js).
-- Rate limiting on login/registration.
+- Rate limiting on login/registration — per-account (IP+email) plus a global
+  per-IP login cap, enforced non-bypassably in the credentials `authorize`
+  callback.
 - Hardened response headers incl. a nonce-based Content-Security-Policy, HSTS,
   and `X-Frame-Options: DENY`.
 - Environment validation at boot; the app refuses to start misconfigured.
