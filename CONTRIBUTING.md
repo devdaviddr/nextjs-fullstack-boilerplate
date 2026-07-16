@@ -1,6 +1,8 @@
 # Contributing
 
-Thanks for your interest in improving this project.
+Thanks for your interest in improving this project. For the full path from a
+feature branch to a live deploy on your own box (this doc + CI + Cloudflare
+Tunnel, tied together), see [Feature → Production](docs/workflow.md).
 
 ## Getting set up
 

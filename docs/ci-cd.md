@@ -2,11 +2,13 @@
 
 [← Back to README](../README.md)
 
-This documentation covers the CI/CD pipeline and testing workflow for the Next.js Fullstack Boilerplate. Deployment is covered separately in [deployment.md](deployment.md).
+This documentation covers the CI/CD pipeline and testing workflow for the Next.js Fullstack Boilerplate. Deployment is covered separately in [deployment.md](deployment.md). For the full path from a feature branch to a deploy on your box, see [Feature → Production](workflow.md).
 
 ### Pipeline Overview
 
-Two workflows run on every push and pull request to `main`:
+Three workflows cover CI, security scanning, and deployment. `ci.yml` and
+`codeql.yml` run on every push and pull request to `main`; `deploy.yml` is
+opt-in and only runs on release tags:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -181,9 +183,13 @@ files for the authoritative YAML.
 
 Both workflows trigger on `push` and `pull_request` to `main` (CodeQL also runs
 on a weekly `schedule`); `ci.yml` additionally runs on `v*` tags, which publish
-the semver-tagged image. `ci.yml` sets `concurrency` so an in-progress run is
-cancelled when a newer commit lands on the same ref, and disables Next.js
-telemetry via `NEXT_TELEMETRY_DISABLED`. All jobs run on `ubuntu-latest` with
+the semver-tagged image. `ci.yml` sets `concurrency: { group: ci-${{
+github.ref }}, cancel-in-progress: true }`, so pushing again to the same
+branch or PR cancels whatever CI run was already in flight for it — if a run
+disappears from the Actions tab after a follow-up push, that's this behavior,
+not a failure. It also disables Next.js telemetry via
+`NEXT_TELEMETRY_DISABLED` (reproducible builds, no telemetry calls from CI).
+All jobs run on `ubuntu-latest` with
 **Node 22** (no version matrix) and pnpm via `pnpm/action-setup` (version taken
 from `package.json`'s `packageManager` field — not pinned in the workflow).
 
@@ -258,7 +264,17 @@ publishing results to the repository's Security tab.
 Skipped unless the repo variable `SELF_HOSTED_DEPLOY == 'true'`. When enabled, it
 runs `make deploy` on a **self-hosted runner** on your box (which dials out to
 GitHub — tunnel-friendly) on release tags, pulling the freshly published images,
-migrating, and restarting. Full design and the pull-based alternative:
+migrating, and restarting.
+
+> **Do not enable this on a public repo.** A self-hosted runner on a public
+> repository is the configuration GitHub explicitly warns against: a fork pull
+> request can add a workflow that targets `runs-on: [self-hosted]` and, once
+> approved, executes arbitrary code on your box and home network. The
+> `SELF_HOSTED_DEPLOY` gate doesn't help — a malicious fork brings its own
+> workflow. Use the pull-based **Tier B** deploy (`make deploy-timer`) instead,
+> which needs no runner and has no such surface.
+
+Full design and the recommended pull-based alternative:
 [self-hosting.md → Continuous deployment](self-hosting.md#continuous-deployment).
 
 ### Local Development Testing
@@ -361,6 +377,45 @@ See [deployment.md](deployment.md) for complete Cloudflare Tunnel setup:
 
 - **Unit tests:** coverage on validation, hashing, rate limiting
 - **E2E tests:** full user journey times
+
+### How a merge becomes a live deploy
+
+Putting the pieces above into one ordered walkthrough, from `git push` to a
+box running the new code:
+
+1. A PR merges to `main`.
+2. `ci.yml` runs `quality` and `e2e` in parallel; `docker` starts as soon as
+   `quality` is green (it doesn't wait on `e2e`) and builds both architectures.
+3. Once **both** `docker` and `e2e` are green, `docker-merge` assembles the
+   multi-arch manifests and publishes `ghcr.io/<owner>/<repo>` (app) and
+   `ghcr.io/<owner>/<repo>/migrate` tagged `sha-<short>` and `latest`.
+4. When you're ready to cut a release: bump the version, update
+   `CHANGELOG.md`, and push a `vX.Y.Z` tag on that same commit (see
+   [Contributing](../CONTRIBUTING.md)).
+5. The tag triggers `ci.yml`'s `release` job, which **waits** for step 3's
+   `sha-<short>` image to exist, then re-tags it with the semver and moves the
+   floating `stable` tag (~30s, no rebuild) and creates the GitHub Release.
+6. A box tracking `APP_TAG=stable` (the recommended default — see
+   [self-hosting.md → Tier B](self-hosting.md#tier-b-recommended--pull-with-make-deploy))
+   picks up the new digest on its next `make deploy-timer` tick (≤60s) and
+   runs `make deploy`: pull → migrate → restart. Nothing is pushed to the
+   box — it's outbound-only the whole way.
+
+### How to add a new CI check
+
+1. Add the command to the relevant job in [`ci.yml`](../.github/workflows/ci.yml)
+   — most checks belong in `quality` (fast, blocking) alongside
+   `format:check`/`lint`/`typecheck`/`test:coverage`.
+2. If it's exploratory or has a high false-positive rate (like `pnpm audit`
+   today), mark the step `continue-on-error: true` so it reports but doesn't
+   block merges, rather than skipping it entirely.
+3. Expose it as a `pnpm` script in `package.json` if it's something a
+   contributor should also be able to run locally before pushing — CI should
+   never be the only place a check can run.
+4. Update the **Quality Gates** list above and the pre-push command
+   (`pnpm lint && pnpm typecheck && pnpm test && pnpm build`) in this doc,
+   `README.md`, and `CONTRIBUTING.md` if the new check should be part of that
+   gate.
 
 ### Troubleshooting
 

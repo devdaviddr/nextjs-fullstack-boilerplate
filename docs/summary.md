@@ -8,7 +8,7 @@ A production-grade starting point for full-stack web apps — authentication, da
 
 ### Quick Stats
 
-- **Version:** 0.15.0
+- **Version:** 0.19.0
 - **License:** MIT
 - **Type:** Full-stack Next.js 16 boilerplate
 - **Target:** Single-box production (Docker + Cloudflare Tunnel)
