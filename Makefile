@@ -24,7 +24,7 @@ deploy: ## Pull the published GHCR image + migrate + restart behind the tunnel (
 	$(DEPLOY) pull migrate
 	$(DEPLOY) up -d
 
-deploy-timer: ## macOS: install a launchd timer that runs `make deploy` on an interval (Tier B pull; default 300s)
+deploy-timer: ## macOS: install a launchd timer that runs `make deploy` on an interval (Tier B pull; default 60s, digest-skipped)
 	@./scripts/macos-deploy-timer.sh install
 
 autostart: ## macOS: install a login LaunchAgent that boots the stack after a reboot

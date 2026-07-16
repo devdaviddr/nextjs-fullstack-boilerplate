@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- **Faster time-to-deploy (spec 0024).** A `v*` release tag no longer rebuilds the
+  image — it **re-tags** the multi-arch image `main` already built and tested for
+  that exact commit (`docker buildx imagetools create`, ~30s instead of a ~5.5 min
+  rebuild). The `release` job waits for `main`'s `sha-<short>` image before
+  re-tagging, so it inherits `main`'s full `quality` + `e2e` gate with no re-run.
+  Tag CI drops from ~5m27s to ~30s.
+- On `main`, the image build now **overlaps `e2e`**: `docker` is gated on `quality`
+  only and runs in parallel with `e2e`, while `docker-merge` (which assigns the
+  human tags) still needs both — so a failed test never yields a tagged image.
+- The deployed version is now applied at **runtime** from `APP_TAG`
+  (`APP_VERSION: ${APP_TAG}` on the `app` service in `docker-compose.deploy.yml`),
+  since the re-tagged image keeps `main`'s baked `APP_VERSION`. `APP_GIT_SHA` stays
+  baked. Settings → Build still shows `APP_TAG · <sha7>`.
+- **Tier B pull timer** now defaults to a **60s** interval and **skips the deploy
+  when the published app image is unchanged** (compares the pulled image digest to
+  `~/.config/<repo>/.last-deployed-image`), so frequent polling is nearly free and a
+  new release lands within ~a minute. Re-run `make deploy-timer` to pick up the new
+  default on an existing box.
+
 ## [0.16.3] - 2026-07-16
 
 ### Fixed

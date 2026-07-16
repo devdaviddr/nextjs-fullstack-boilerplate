@@ -10,16 +10,22 @@ Two workflows run on every push and pull request to `main`:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ .github/workflows/ci.yml  (push / PR → main)                │
+│ .github/workflows/ci.yml  (push / PR → main · v* tags)      │
 ├─────────────────────────────────────────────────────────────┤
-│ quality : format:check · lint · typecheck · test:coverage    │
-│           · pnpm audit (non-blocking)                        │
-│ e2e     : Postgres service + MinIO + Mailpit → migrate/seed   │
-│           → build → Playwright (uploads report artifact)     │
-│ docker  : needs quality+e2e; per-arch native build (amd64 +   │
-│           arm64) → push by digest                             │
-│ docker-merge : assemble multi-arch manifest → publish 2 GHCR  │
-│           images (app + migrate) on main/tags; PRs build only  │
+│ On push to main / PR (NOT tags):                             │
+│   quality : format:check · lint · typecheck · test:coverage  │
+│             · pnpm audit (non-blocking)                      │
+│   e2e     : Postgres service + MinIO + Mailpit → migrate/seed │
+│             → build → Playwright (uploads report artifact)   │
+│   docker  : needs quality; builds in PARALLEL with e2e;      │
+│             per-arch native (amd64 + arm64) → push by digest  │
+│   docker-merge : needs docker + e2e; assemble multi-arch     │
+│             manifest → publish 2 GHCR images (app + migrate); │
+│             PRs build only (no push, no merge)               │
+│ On a v* release tag (fast path — no rebuild):                │
+│   release : wait for main's already-built image for this     │
+│             commit, then re-tag its digest with the semver   │
+│             (~30s). See "Release fast-path" below.           │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
 │ .github/workflows/codeql.yml  (push / PR → main · weekly)   │
@@ -34,9 +40,53 @@ Two workflows run on every push and pull request to `main`:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-`quality` and `e2e` run independently; **`docker` now needs both** (it only
-publishes tested images). Publishing and the opt-in `deploy.yml` are the
+`quality` and `e2e` run independently. **`docker` is gated on `quality` only**
+(fast lint/type/unit) so the ~2–3 min image build **overlaps** the ~2 min `e2e`
+instead of queuing behind it; **`docker-merge` (which assigns the human tags)
+needs both `docker` and `e2e`**, so nothing gets a usable tag until the full
+suite is green. Publishing and the opt-in `deploy.yml` are the
 continuous-deployment story — see [self-hosting.md](self-hosting.md#continuous-deployment).
+
+### Release fast-path — a `v*` tag re-tags, it does not rebuild
+
+A release is a `v*` tag placed on a `main` commit that CI **already built, tested,
+and published** (as `sha-<short>` + `latest`) minutes earlier. Rebuilding it on the
+tag would recompile a bit-identical image just to add the semver tag — the slowest
+thing on the whole tag→live path. Instead, on a tag ref the workflow runs a single
+`release` job that **adds the semver tag to the existing multi-arch digest** with
+`docker buildx imagetools create` (a manifest op, ~30s); `quality`, `e2e`, `docker`,
+and `docker-merge` are all skipped.
+
+The `release` job **waits** for `ghcr.io/<owner>/<repo>:sha-<short>` (app + migrate)
+to exist before re-tagging, so it **inherits `main`'s full gate** — that image is
+only published once `main`'s `quality` + `e2e` + build pass. If it never appears the
+release fails loudly rather than shipping something untested.
+
+Because the re-tagged image carries `main`'s baked `APP_VERSION=main`, the deployed
+version is applied at **runtime** from the tag the box pulled — `APP_VERSION:
+${APP_TAG}` on the `app` service in `docker-compose.deploy.yml` (with `APP_GIT_SHA`
+still baked, correct). Settings → Build shows `APP_TAG · <sha7>`. See
+[spec 0024](../specs/0024-faster-time-to-deploy.md).
+
+> **Realizing the win:** merge to `main`, let `main` CI go green, **then** push the
+> `v*` tag — the image is already there and the tag ships in ~30s. Pushing the tag
+> at the same time as the merge is still correct: the `release` job just waits for
+> `main`'s build (no duplicate compute), then re-tags.
+
+### Time-to-deploy budget
+
+Measured on the `v0.16.x` releases (box pins a semver `APP_TAG`, so the tag pipeline
+is on the critical path):
+
+| Phase                                 | Before (0.16.x)       | After (0.17.0)                       |
+| ------------------------------------- | --------------------- | ------------------------------------ |
+| Tag CI (`git push` tag → image ready) | ~5m27s (full rebuild) | ~30s re-tag¹                         |
+| Poll wait (Tier B timer)              | 0–300s (avg ~150s)    | 0–60s (avg ~30s), idle ticks skipped |
+| Deploy on box                         | ~1–2 min              | ~1–2 min (unchanged)                 |
+
+¹ Plus a wait for `main`'s build if the tag is pushed before `main` CI is green. The
+`main` build itself (~3–4 min after overlapping build with e2e) is the one
+unavoidable compile of new source.
 
 ### Quality Gates
 
@@ -150,14 +200,16 @@ uploads the `playwright-report/` as an artifact (`if: ${{ !cancelled() }}`,
 `SMTP_HOST=127.0.0.1`, `SMTP_PORT=1025`) so the reset/verification round-trips
 run in `email-flow.spec.ts`. `AUTH_SECRET` is a throwaway CI value.
 
-#### `docker` job (+ `docker-merge`)
+#### `docker` job (+ `docker-merge`, `release`)
 
-`needs: [quality, e2e]` — it only publishes **tested** images, and they're
-**multi-arch** (`linux/amd64` + `linux/arm64`) so they run on Apple Silicon Mac
-minis as well as amd64 servers. To avoid slow QEMU emulation, `docker` is a
-matrix that builds each arch on its **own native runner** (`ubuntu-latest` +
-`ubuntu-24.04-arm`) and pushes by digest; a `docker-merge` job then assembles the
-per-arch digests into one manifest per image via `docker/metadata-action`:
+`docker` is gated `needs: [quality]` and runs in **parallel** with `e2e` (so the
+build overlaps the tests); `docker-merge` is gated `needs: [docker, e2e]`, so it
+only publishes **tested** images. They're **multi-arch** (`linux/amd64` +
+`linux/arm64`) so they run on Apple Silicon Mac minis as well as amd64 servers. To
+avoid slow QEMU emulation, `docker` is a matrix that builds each arch on its **own
+native runner** (`ubuntu-latest` + `ubuntu-24.04-arm`) and pushes by digest; a
+`docker-merge` job then assembles the per-arch digests into one manifest per image
+via `docker/metadata-action`:
 
 - `ghcr.io/<owner>/<repo>` — the production `runner` target (the app).
 - `ghcr.io/<owner>/<repo>/migrate` — the `builder` target, the only one that can
@@ -168,11 +220,18 @@ branch. **Pull requests build both arches cache-only and never push** (login is
 skipped; `docker-merge` is gated to non-PR) so forks stay safe. Uses the workflow
 `GITHUB_TOKEN` with `packages: write`.
 
-The app build also bakes in a **build identity** via build-args —
-`APP_VERSION=${{ github.ref_name }}` (semver tag on a release, `main` on a branch
-build) and `APP_GIT_SHA=${{ github.sha }}`. The Dockerfile persists them as `ENV`,
-`src/lib/env.ts` reads them, and the app surfaces them in **Settings → Build** so
-an operator can confirm which version a self-hosted box is running.
+The `main`/PR app build bakes a **build identity** via build-args —
+`APP_VERSION=${{ github.ref_name }}` (`main` on a branch build) and
+`APP_GIT_SHA=${{ github.sha }}`. The Dockerfile persists them as `ENV` and
+`src/lib/env.ts` reads them. Because a **release tag re-tags this image rather than
+rebuilding** (see "Release fast-path"), the baked `APP_VERSION` stays `main`; the
+deployed version is instead applied at **runtime** from the pinned `APP_TAG`
+(`docker-compose.deploy.yml`), while `APP_GIT_SHA` stays baked (correct). Either
+way the app surfaces the pair in **Settings → Build** so an operator can confirm
+which version a self-hosted box is running.
+
+On a tag ref, `docker`/`docker-merge` are skipped and the **`release`** job re-tags
+instead — see "Release fast-path" above.
 
 #### CodeQL
 
