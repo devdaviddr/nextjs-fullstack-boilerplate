@@ -6,7 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
-## [Unreleased]
+## [0.16.0] - 2026-07-16
+
+### Added
+
+- **Deployed build version in Settings.** CI bakes the build identity
+  (`APP_VERSION` = git ref, `APP_GIT_SHA` = commit) into the image via build-args;
+  the app surfaces it in a new **Settings → Build** card, so you can confirm which
+  version a self-hosted box is running after an unattended pull. Falls back to a
+  "development build" note when unset (`next dev`, un-baked image).
+  ([spec 0023](specs/0023-tier-b-default-and-build-version.md))
+- **Pull-based deploy timer (Tier B).** `make deploy-timer`
+  ([`scripts/macos-deploy-timer.sh`](scripts/macos-deploy-timer.sh)) installs a
+  launchd timer that runs `make deploy` on an interval (default 300s), rolling out
+  new releases unattended with **no self-hosted runner**.
+
+### Changed
+
+- **Pull-based deploy (Tier B) is now the recommended default**; the self-hosted
+  runner path (Tier C) is documented as **private-repo-only**. On a public repo a
+  fork pull request can execute arbitrary code on a self-hosted runner — Tier B
+  (the box pulls from GHCR) has no such surface. `deploy.yml` now carries a loud
+  do-not-use-on-public-repos warning.
+
+### Security
+
+- Documented and hardened against the **public-repo + self-hosted-runner** RCE
+  risk (SECURITY.md, `deploy.yml`, Self-hosting → Tier C).
 
 ### Fixed
 

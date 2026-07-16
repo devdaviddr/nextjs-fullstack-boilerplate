@@ -29,5 +29,14 @@ Built-in protections (see [docs/architecture.md](docs/architecture.md#security-m
 - Environment validation at boot; the app refuses to start misconfigured.
 - Non-root Docker image.
 
+## Self-hosted deployment
+
+On a **public** repo, deploy with the **pull-based** path (Tier B —
+`make deploy-timer`): the box pulls images from GHCR and GitHub never runs your
+repo's code on it. **Do not** enable the self-hosted-runner deploy (Tier C) on a
+public repo — a fork pull request can run arbitrary code on your box. Tier C is
+for private/trusted repos only, ideally with an ephemeral runner. See
+[docs/self-hosting.md](docs/self-hosting.md#continuous-deployment) and spec 0023.
+
 Before going to production, review the checklist in
 [docs/usage.md](docs/usage.md#production-checklist).
