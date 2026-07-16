@@ -5,6 +5,7 @@ import { AdminPanel } from '@/components/auth/admin-panel'
 import { ConnectedAccounts } from '@/components/auth/connected-accounts'
 import { FilesPanel } from '@/components/files/files-panel'
 import { NotificationsPanel } from '@/components/push/notifications-panel'
+import { BuildInfoCard } from '@/components/settings/build-info-card'
 import type { LinkedAccountsState } from '@/lib/auth/account-actions'
 import type { FileSummary } from '@/lib/storage/actions'
 
@@ -31,6 +32,8 @@ interface SettingsClientProps {
   linkedAccounts: LinkedAccountsState
   pushPublicKey: string | null
   isAdmin: boolean
+  buildVersion?: string
+  buildSha?: string
 }
 
 export function SettingsClient({
@@ -41,6 +44,8 @@ export function SettingsClient({
   linkedAccounts,
   pushPublicKey,
   isAdmin,
+  buildVersion,
+  buildSha,
 }: SettingsClientProps) {
   const formattedRoles = roles.map((r) => ({ id: r.id, name: r.name }))
 
@@ -64,6 +69,8 @@ export function SettingsClient({
           currentUserId={session.user.id}
         />
       )}
+
+      <BuildInfoCard version={buildVersion} sha={buildSha} />
     </div>
   )
 }

@@ -54,6 +54,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
+# Baked-in build identity, surfaced in the app's Settings page. CI passes these
+# as build-args (APP_VERSION=git ref, APP_GIT_SHA=commit); the defaults keep
+# local and un-baked builds working. Placed late so a per-commit SHA change only
+# rebuilds this tiny final layer, not the whole image.
+ARG APP_VERSION=unknown
+ARG APP_GIT_SHA=unknown
+ENV APP_VERSION=$APP_VERSION
+ENV APP_GIT_SHA=$APP_GIT_SHA
+
 USER nextjs
 EXPOSE 3000
 

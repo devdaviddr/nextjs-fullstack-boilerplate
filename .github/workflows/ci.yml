@@ -166,6 +166,11 @@ jobs:
           context: .
           target: runner
           platforms: ${{ matrix.platform }}
+          # Bake the build identity into the image (shown in the app's Settings).
+          # ref_name is the semver tag on a release build, or `main` on a branch build.
+          build-args: |
+            APP_VERSION=${{ github.ref_name }}
+            APP_GIT_SHA=${{ github.sha }}
           outputs: ${{ github.event_name != 'pull_request' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.APP_IMAGE) || 'type=cacheonly' }}
           cache-from: type=gha,scope=app-${{ env.PLATFORM_PAIR }}
           cache-to: type=gha,mode=max,scope=app-${{ env.PLATFORM_PAIR }}
