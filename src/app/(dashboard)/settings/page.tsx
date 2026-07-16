@@ -9,6 +9,7 @@ import {
 import { getLinkedAccounts } from '@/lib/auth/account-actions'
 import { getVapidPublicKey } from '@/lib/push'
 import { listMyFiles } from '@/lib/storage/actions'
+import { env } from '@/lib/env'
 import { SettingsClient } from './settings-client'
 
 export const metadata: Metadata = { title: 'Settings' }
@@ -55,6 +56,8 @@ export default async function SettingsPage() {
       linkedAccounts={linkedAccounts}
       pushPublicKey={getVapidPublicKey()}
       isAdmin={isAdmin}
+      buildVersion={env.APP_VERSION}
+      buildSha={env.APP_GIT_SHA}
     />
   )
 }

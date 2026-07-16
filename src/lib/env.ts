@@ -114,6 +114,14 @@ const envSchema = z
       .min(1)
       .optional()
       .default('image/png,image/jpeg,image/webp,image/gif,application/pdf'),
+
+    // --- Build identity (baked into the image at CI build time) ------------
+    // ci.yml passes these as Docker build-args (APP_VERSION=git ref name,
+    // APP_GIT_SHA=commit sha); the Dockerfile persists them as ENV. Surfaced
+    // read-only in the Settings page. Absent under `next dev` and in un-baked
+    // local images — the UI degrades gracefully.
+    APP_VERSION: optionalStr,
+    APP_GIT_SHA: optionalStr,
   })
   .superRefine((val, ctx) => {
     // If email is toggled on, a provider MUST be configured — fail fast at boot
