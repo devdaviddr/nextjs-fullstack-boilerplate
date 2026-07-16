@@ -168,6 +168,12 @@ branch. **Pull requests build both arches cache-only and never push** (login is
 skipped; `docker-merge` is gated to non-PR) so forks stay safe. Uses the workflow
 `GITHUB_TOKEN` with `packages: write`.
 
+The app build also bakes in a **build identity** via build-args —
+`APP_VERSION=${{ github.ref_name }}` (semver tag on a release, `main` on a branch
+build) and `APP_GIT_SHA=${{ github.sha }}`. The Dockerfile persists them as `ENV`,
+`src/lib/env.ts` reads them, and the app surfaces them in **Settings → Build** so
+an operator can confirm which version a self-hosted box is running.
+
 #### CodeQL
 
 `codeql.yml` runs GitHub's CodeQL `security-and-quality` query suite over the

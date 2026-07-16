@@ -190,17 +190,40 @@ make deploy    # docker compose pull → up -d  (prod + deploy + tunnel overlays
 
 `make deploy` pulls both images, runs the one-shot **migrate** (it gates the app
 via `depends_on`, so schema changes apply **before** the new app starts), then
-restarts the app behind the tunnel — **no building on the box**. Run it by hand,
-or from `cron` / a `launchd` timer for scheduled updates. If the package is
-private, `docker login ghcr.io` once on the box with a read-only PAT.
+restarts the app behind the tunnel — **no building on the box**. If the package
+is private, `docker login ghcr.io` once on the box with a read-only PAT.
+
+**Automate it (macOS)** — install a launchd timer that runs `make deploy` on an
+interval so new releases roll out unattended:
+
+```bash
+make deploy-timer                              # every 300s (5 min)
+./scripts/macos-deploy-timer.sh install 600    # or a custom interval
+./scripts/macos-deploy-timer.sh status         # is it loaded?
+./scripts/macos-deploy-timer.sh uninstall
+```
+
+Each tick refreshes the checkout (`git pull --ff-only`, best-effort), copies the
+operator's off-checkout `.env` from `~/.config/nextjs-fullstack-boilerplate/.env`
+(override with `DEPLOY_ENV_FILE`) into the project dir, then runs `make deploy`.
+With `APP_TAG=latest`, the box lands on each new release within one interval; you
+can watch which build is live in the app's **Settings → Build** card.
 
 **Rollback** is just re-pinning: set `APP_TAG` to the previous version (or a
 commit `sha` tag) and run `make deploy` again.
 
-### Tier C (optional) — push-button on tag, via a self-hosted runner
+### Tier C (private repos only) — push-button on tag, via a self-hosted runner
 
-For true "tag a release → it deploys itself", register your box as a **GitHub
-self-hosted runner** and enable the shipped [`deploy.yml`](../.github/workflows/deploy.yml):
+> 🚫 **Do not use Tier C on a public repo.** A self-hosted runner on a public
+> repository is the setup GitHub warns against: a fork pull request can add a
+> workflow that runs on `[self-hosted]` and, once approved, executes **arbitrary
+> code on your box and home network**. The `SELF_HOSTED_DEPLOY` gate does not
+> help — a malicious fork brings its own workflow. On a public repo, use **Tier B
+> (`make deploy-timer`)** above, which has no runner and no such surface.
+
+For a **private/trusted** repo wanting true "tag a release → it deploys itself",
+register your box as a **GitHub self-hosted runner** and enable the shipped
+[`deploy.yml`](../.github/workflows/deploy.yml):
 
 1. Add a self-hosted runner on the box (GitHub → Settings → Actions → Runners).
    The runner **dials out** to GitHub, so it works behind the tunnel.
@@ -215,10 +238,9 @@ self-hosted runner** and enable the shipped [`deploy.yml`](../.github/workflows/
 4. Push a `v*` tag — the runner copies that env file into the checkout and runs
    `make deploy` on the box.
 
-> ⚠️ A self-hosted runner executes workflow code on your network. Use it only on
-> a **private** repo (or one where you trust every tag), and prefer an
-> **ephemeral** runner. Tier B (pull) avoids this entirely — it's the default for
-> a reason.
+> ⚠️ Even on a private repo, a self-hosted runner executes workflow code on your
+> network — prefer an **ephemeral**, low-privilege runner. Tier B (pull) avoids
+> this entirely and is the recommended default.
 
 ### Note on Watchtower
 
@@ -276,6 +298,10 @@ cover the reboot case. For it to work unattended you also need:
 - Your **container runtime set to start at login** (a Docker Desktop /
   OrbStack setting).
 - **No sleep:** `sudo pmset -a sleep 0 disablesleep 1 womp 1`
+
+For **unattended updates** on top of boot persistence, add the Tier B pull timer
+(`make deploy-timer`, above) — the box then keeps itself current on each release
+with no self-hosted runner.
 
 **2. Container runtime.** Docker Desktop works out of the box (Apple Silicon
 native). [OrbStack](https://orbstack.dev) or Colima are lighter and friendlier
