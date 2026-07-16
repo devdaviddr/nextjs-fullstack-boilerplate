@@ -1,0 +1,27 @@
+# Opt-in continuous deployment to a SELF-HOSTED box (spec 0021, Tier C).
+#
+# Disabled by default: the job is skipped unless the repo variable
+# SELF_HOSTED_DEPLOY == 'true' (Settings → Secrets and variables → Actions →
+# Variables). Enable it only with a self-hosted runner registered on your box —
+# the runner dials out to GitHub, so it works behind the outbound-only tunnel.
+#
+# Security: runs on release tags only, on your own runner. Keep the repo PRIVATE
+# (or trust every tag), and prefer an EPHEMERAL runner. See docs/self-hosting.md.
+name: Deploy (self-hosted)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # manual "Run workflow" button
+
+jobs:
+  deploy:
+    if: vars.SELF_HOSTED_DEPLOY == 'true'
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+      # APP_IMAGE / APP_TAG and the tunnel vars (AUTH_URL, CLOUDFLARE_TUNNEL_TOKEN)
+      # live in the box's .env, which `make deploy` reads. This pulls the freshly
+      # published images, runs migrations, and restarts the app behind the tunnel.
+      - name: Pull & deploy
+        run: make deploy
