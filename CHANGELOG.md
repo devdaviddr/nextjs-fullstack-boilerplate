@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
+## [0.16.1] - 2026-07-16
+
+### Fixed
+
+- Deploy timer / autostart: the container-engine readiness probe used
+  `docker info`, which **hangs indefinitely on some Podman machines** — so every
+  scheduled `make deploy-timer` tick (and `make autostart` boot) stalled before
+  it ever deployed. Switched both to `docker version` (same reachability check,
+  returns fast). Found on the live self-hosted box after 0.16.0.
+
 ## [0.16.0] - 2026-07-16
 
 ### Added
