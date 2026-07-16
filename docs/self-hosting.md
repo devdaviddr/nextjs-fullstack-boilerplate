@@ -172,8 +172,8 @@ the GitHub Container Registry, **only after `quality` + `e2e` pass**:
   can't run migrations itself).
 
 A `v*` **release tag does not rebuild** — it re-tags the image `main` already built
-for that commit with the semver (~30s), applying the deployed version at runtime
-from `APP_TAG`. For the fastest release, push the tag **after** `main`'s CI is green
+for that commit with the semver **and moves the floating `stable` tag** (~30s),
+applying the deployed version at runtime from `APP_TAG`. For the fastest release, push the tag **after** `main`'s CI is green
 (see [docs/ci-cd.md → Release fast-path](ci-cd.md#release-fast-path--a-v-tag-re-tags-it-does-not-rebuild)
 and [spec 0024](../specs/0024-faster-time-to-deploy.md)).
 
@@ -184,8 +184,15 @@ Point the box at the published image and update with one command. In the box's
 
 ```bash
 APP_IMAGE="ghcr.io/your-org/nextjs-fullstack-boilerplate"
-APP_TAG="latest"        # or pin a release, e.g. 0.15.0 (no "v" — semver image tags)
+APP_TAG="stable"        # newest RELEASE — moves when a v* tag is pushed (recommended)
+# APP_TAG="latest"      # every green main merge (trunk tracking, no release gate)
+# APP_TAG="0.18.0"      # pin an exact release — never moves; bump it to update
 ```
+
+`APP_TAG` is the whole deployment policy: it decides **what** lands on the box and
+**when**. With a floating tag (`stable`/`latest`), Settings → Build shows the tag
+(`stable · <sha7>`) rather than a version number — the SHA still pins the exact
+commit; pin a semver if you want the number displayed.
 
 Then, to update:
 

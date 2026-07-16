@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 As this project is pre-1.0, minor versions may introduce breaking changes.
 
+## [0.18.0] - 2026-07-16
+
+### Added
+
+- **Floating `stable` image tag — "tag a release → the box deploys it".** The
+  `release` job now also moves `ghcr.io/<owner>/<repo>:stable` (app + migrate) to
+  every `v*` release it re-tags. A Tier B box that sets `APP_TAG="stable"`
+  auto-deploys each new release within ~a minute of the tag push — the missing
+  middle between `APP_TAG="latest"` (ships every green `main` merge) and a pinned
+  semver (never moves without a manual bump on the box). Any `v*` push moves
+  `stable`, so roll back by pinning `APP_TAG` to a previous version. With a
+  floating tag, Settings → Build shows `stable · <sha7>` (the SHA still identifies
+  the exact commit); pin a semver to display the version number.
+
 ## [0.17.0] - 2026-07-16
 
 ### Changed
