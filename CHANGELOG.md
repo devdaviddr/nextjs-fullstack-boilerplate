@@ -8,6 +8,8 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-16
+
 ### Added
 
 - **One-click self-hosting** (`make setup`) — a guided wizard
