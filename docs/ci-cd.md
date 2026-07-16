@@ -24,7 +24,7 @@ Two workflows run on every push and pull request to `main`:
 │             PRs build only (no push, no merge)               │
 │ On a v* release tag (fast path — no rebuild):                │
 │   release : wait for main's already-built image for this     │
-│             commit, then re-tag its digest with the semver   │
+│             commit, then re-tag it with the semver + stable  │
 │             (~30s). See "Release fast-path" below.           │
 └─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────┐
@@ -53,19 +53,27 @@ A release is a `v*` tag placed on a `main` commit that CI **already built, teste
 and published** (as `sha-<short>` + `latest`) minutes earlier. Rebuilding it on the
 tag would recompile a bit-identical image just to add the semver tag — the slowest
 thing on the whole tag→live path. Instead, on a tag ref the workflow runs a single
-`release` job that **adds the semver tag to the existing multi-arch digest** with
-`docker buildx imagetools create` (a manifest op, ~30s); `quality`, `e2e`, `docker`,
-and `docker-merge` are all skipped.
+`release` job that **adds the semver tag — and moves the floating `stable` tag — on
+the existing multi-arch digest** with `docker buildx imagetools create` (a manifest
+op, ~30s); `quality`, `e2e`, `docker`, and `docker-merge` are all skipped.
 
 The `release` job **waits** for `ghcr.io/<owner>/<repo>:sha-<short>` (app + migrate)
 to exist before re-tagging, so it **inherits `main`'s full gate** — that image is
 only published once `main`'s `quality` + `e2e` + build pass. If it never appears the
 release fails loudly rather than shipping something untested.
 
+**`stable` always points at the most recently released image.** It's the tag a
+Tier B box sets `APP_TAG` to for automatic _release-only_ deploys: `latest` moves
+on every `main` merge, a pinned semver never moves — `stable` moves exactly when a
+release is cut. Any `v*` push moves it (including an old tag re-pushed), so roll
+back by pinning `APP_TAG` to a semver, not by re-pushing old tags.
+
 Because the re-tagged image carries `main`'s baked `APP_VERSION=main`, the deployed
 version is applied at **runtime** from the tag the box pulled — `APP_VERSION:
 ${APP_TAG}` on the `app` service in `docker-compose.deploy.yml` (with `APP_GIT_SHA`
-still baked, correct). Settings → Build shows `APP_TAG · <sha7>`. See
+still baked, correct). Settings → Build shows `APP_TAG · <sha7>` — with a floating
+`APP_TAG=stable` that reads `stable · <sha7>` (the SHA still pins the exact commit);
+pin a semver if you want the version number displayed. See
 [spec 0024](../specs/0024-faster-time-to-deploy.md).
 
 > **Realizing the win:** merge to `main`, let `main` CI go green, **then** push the

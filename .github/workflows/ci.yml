@@ -354,9 +354,14 @@ jobs:
           echo "::error::Timed out waiting for ${SHA_TAG}. The main build for this commit must go green first — it publishes the tested image this tag re-tags. Re-run this job once main is green, or push the tag after main's CI passes."
           exit 1
 
-      - name: Re-tag app + migrate with the release version
+      # `stable` floats to the most recently pushed release tag. It's what a
+      # Tier B box tracks to auto-deploy *releases only*: `latest` moves on every
+      # main merge, a pinned semver never moves — `stable` moves exactly when a
+      # release is cut. Note it moves on ANY v* push, including an old tag: roll
+      # back by pinning APP_TAG to a semver, not by re-pushing old tags.
+      - name: Re-tag app + migrate with the release version + stable
         run: |
-          docker buildx imagetools create -t "${APP_IMAGE}:${VERSION}"     "${APP_IMAGE}:${SHA_TAG}"
-          docker buildx imagetools create -t "${MIGRATE_IMAGE}:${VERSION}" "${MIGRATE_IMAGE}:${SHA_TAG}"
+          docker buildx imagetools create -t "${APP_IMAGE}:${VERSION}"     -t "${APP_IMAGE}:stable"     "${APP_IMAGE}:${SHA_TAG}"
+          docker buildx imagetools create -t "${MIGRATE_IMAGE}:${VERSION}" -t "${MIGRATE_IMAGE}:stable" "${MIGRATE_IMAGE}:${SHA_TAG}"
           echo "── app ${VERSION} ──";     docker buildx imagetools inspect "${APP_IMAGE}:${VERSION}"
           echo "── migrate ${VERSION} ──"; docker buildx imagetools inspect "${MIGRATE_IMAGE}:${VERSION}"
