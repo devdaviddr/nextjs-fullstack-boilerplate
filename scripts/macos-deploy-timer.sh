@@ -27,6 +27,12 @@ ENV_SRC="${DEPLOY_ENV_FILE:-$HOME/.config/${REPO_NAME}/.env}"
 
 usage() { sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
+# Readiness probe for the container engine. Uses `docker version` rather than
+# `docker info` — the latter hangs indefinitely on some Podman machines (it
+# queries full system state), which would wedge every tick before `make deploy`.
+# `docker version` checks the same thing (server reachable) and returns fast.
+engine_ready() { docker version --format '{{.Server.Version}}' >/dev/null 2>&1; }
+
 install_agent() {
   local interval="${1:-300}"
   case "$interval" in
@@ -89,8 +95,8 @@ tick() {
   fi
   install -m 600 "$ENV_SRC" .env
   # The box may have just booted — wait for the engine before pulling.
-  for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done
-  docker info >/dev/null 2>&1 || { echo "[deploy-timer] Docker engine not available — is the runtime set to start at login?" >&2; exit 1; }
+  for _ in $(seq 1 60); do engine_ready && break; sleep 5; done
+  engine_ready || { echo "[deploy-timer] Docker engine not available — is the runtime set to start at login?" >&2; exit 1; }
   make deploy
   echo "[deploy-timer] $(date) done"
 }

@@ -29,6 +29,12 @@ LOG="$HOME/Library/Logs/${LABEL}.log"
 
 usage() { sed -n '2,21p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
+# Readiness probe for the container engine. Uses `docker version` rather than
+# `docker info` — the latter hangs indefinitely on some Podman machines, which
+# would stall boot. `docker version` checks the same thing (server reachable)
+# and returns fast.
+engine_ready() { docker version --format '{{.Server.Version}}' >/dev/null 2>&1; }
+
 install_agent() {
   local target="${1:-tunnel-up}"
   case "$target" in
@@ -86,10 +92,10 @@ boot_stack() {
   cd "$ROOT_DIR"
   echo "[autostart] $(date) waiting for Docker engine…"
   for _ in $(seq 1 60); do
-    docker info >/dev/null 2>&1 && break
+    engine_ready && break
     sleep 5
   done
-  docker info >/dev/null 2>&1 || { echo "[autostart] Docker engine never came up — is the runtime set to start at login?"; exit 1; }
+  engine_ready || { echo "[autostart] Docker engine never came up — is the runtime set to start at login?"; exit 1; }
   echo "[autostart] Docker up — running make ${target}"
   make "$target"
 }
