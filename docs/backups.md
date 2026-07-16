@@ -93,8 +93,15 @@ docker compose -f docker-compose.prod.yml run --rm \
 
 The on-host copy doesn't survive disk loss. To also push backups to an S3-
 compatible offsite target (e.g. Cloudflare R2), add an `mc` alias and mirror
-step — off by default, opt-in per deployment. Provision a **least-privilege**
-API token (write-only to the backup bucket), and set:
+step — off by default, opt-in per deployment.
+
+> **macOS note:** Time Machine backs up `./backups` (it's a normal folder), but
+> the Docker **volumes** (`pgdata`, `miniodata`) live inside Docker's Linux VM,
+> which Time Machine does **not** cover. The dumps + this offsite copy are your
+> real safety net — or point `./backups` at an external drive.
+
+Provision a **least-privilege** API token (write-only to the backup bucket),
+and set:
 
 ```bash
 OFFSITE_BACKUP_ENDPOINT=https://<account>.r2.cloudflarestorage.com

@@ -8,6 +8,34 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-16
+
+### Added
+
+- **macOS boot persistence** (`make autostart`) — installs a login LaunchAgent
+  ([`scripts/macos-autostart.sh`](scripts/macos-autostart.sh)) that waits for the
+  Docker engine after a reboot and brings the tunnel stack up (`tunnel-up` by
+  default, or `deploy` for pull-based updates). Closes the last gap between
+  "deployed on a Mac mini" and "survives a power cut unattended".
+- **Global per-IP login rate limit** (`AUTH_LIMITS.loginPerIp`, 50/10 min) —
+  blunts credential stuffing across many accounts from one source. Enforced in
+  both the login server action and the non-bypassable `authorize` callback,
+  keyed independently so the two entry points don't double-count. Existing
+  per-account (IP+email) limits unchanged.
+- **"Running on a Mac mini (always-on)"** section in
+  [Self-hosting](docs/self-hosting.md): autostart, auto-login/pmset, Docker
+  Desktop vs OrbStack/Colima, memory sizing, and the Time Machine caveat
+  (Docker volumes live in the VM and are NOT covered — offsite backups are the
+  real safety net; also noted in [backups.md](docs/backups.md)).
+- Unit tests for `getCurrentSession()` (decode-error tolerance, control-flow
+  rethrow, genuine-failure rethrow) and the new per-IP login cap.
+
+### Changed
+
+- Renovate now pins GitHub Actions to commit digests
+  (`helpers:pinGitHubActionDigests`).
+- GitHub secret scanning + push protection enabled on the repository.
+
 ### Fixed
 
 - Published container images are now **multi-arch** (`linux/amd64` +
@@ -15,6 +43,10 @@ As this project is pre-1.0, minor versions may introduce breaking changes.
   minis and other ARM hosts — not just amd64 servers. CI builds each arch on its
   own native runner (`ubuntu-latest` + `ubuntu-24.04-arm`), pushes by digest, and
   merges a multi-arch manifest. The initial v0.14.0 images were amd64-only.
+- Deployment-script hardening: `tunnel-verify.sh` uses `mktemp` instead of a
+  fixed `/tmp` path and is shellcheck-clean; the setup wizard preflights
+  `.env.example`; the quick-tunnel `cloudflared` gets `restart: unless-stopped`;
+  the Terraform module README documents the provider v4→v5 upgrade caveat.
 
 ## [0.14.0] - 2026-07-16
 

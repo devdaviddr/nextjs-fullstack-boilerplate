@@ -246,6 +246,48 @@ make tunnel-up
 
 ---
 
+## Running on a Mac mini (always-on)
+
+A Mac mini is a great single-box host for this stack, but macOS needs a little
+hardening to survive reboots unattended:
+
+**1. Boot persistence — one command:**
+
+```bash
+make autostart          # installs a login LaunchAgent (see scripts/macos-autostart.sh)
+```
+
+The agent waits for the Docker engine at login, then runs `make tunnel-up`
+(pass a target for pull-based updates instead:
+`./scripts/macos-autostart.sh install deploy`). Check it with
+`./scripts/macos-autostart.sh status`; logs land in `~/Library/Logs/`.
+Containers already use `restart: unless-stopped`, so the agent only needs to
+cover the reboot case. For it to work unattended you also need:
+
+- **Auto-login** (System Settings → Users & Groups → Automatically log in) —
+  LaunchAgents run at login, and Docker Desktop needs a GUI session.
+- Your **container runtime set to start at login** (a Docker Desktop /
+  OrbStack setting).
+- **No sleep:** `sudo pmset -a sleep 0 disablesleep 1 womp 1`
+
+**2. Container runtime.** Docker Desktop works out of the box (Apple Silicon
+native). [OrbStack](https://orbstack.dev) or Colima are lighter and friendlier
+for a headless server — the wizard and Makefile work identically with any of
+them (they all provide `docker` + `compose`).
+
+**3. Sizing.** Give the Docker VM **≥ 4 GB memory** (8 GB comfortable) for
+Postgres + MinIO + the app + backup sidecars — Docker Desktop → Settings →
+Resources. Watch `docker stats` under load.
+
+**4. Backups & Time Machine.** The nightly dumps land in `./backups` on the
+same disk as the data, and the Docker **volumes** (`pgdata`, `miniodata`) live
+inside Docker's Linux VM where **Time Machine does not reach them**. The dumps
+in `./backups` _are_ Time-Machine-covered, but for real disk-failure resilience
+enable the **offsite copy** (Cloudflare R2/S3) or point `./backups` at an
+external drive — see [backups.md](backups.md#optional-offsite-copy-disk-failure-resilience).
+
+---
+
 ## Troubleshooting
 
 | Symptom                         | Fix                                                                                                                                    |
