@@ -186,6 +186,25 @@ and the ingress target stays `http://app:3000` (Compose service name), never
       discovered automatically on opening the project, and drives a successful
       `make setup` end to end (verified at least in quick mode).
 
+## Post-ship validation
+
+The code shipped in v0.14.0; the remaining unchecked criteria above are a
+**full `make setup` run against a real Cloudflare domain**, which needs
+resources only the operator has (a Cloudflare domain + API/tunnel token). The
+sequence to close them out:
+
+1. **Quick-mode smoke test** — `SETUP_MODE=quick SETUP_YES=1 make setup` (brief
+   public `*.trycloudflare.com` exposure; tear down right after).
+2. **Automated (or guided) mode against the real domain** → live
+   `https://app.<domain>` with a seeded admin and a green `make tunnel-verify`.
+3. **Exercise CD** ([0021](0021-continuous-deployment-self-hosted.md)) — set
+   `APP_IMAGE` in `.env`, `make deploy`, then roll back by re-pinning `APP_TAG`.
+
+Boot persistence and the self-hosted-runner CD path
+([0022](0022-always-on-hardening-mac-mini.md), [0021](0021-continuous-deployment-self-hosted.md))
+are already **verified live on the frank server**; this remaining item is the
+one-time wizard run on a brand-new domain.
+
 ## Security & privacy
 
 - Inherits 0005's posture: outbound-only tunnel, TLS terminates at Cloudflare,
