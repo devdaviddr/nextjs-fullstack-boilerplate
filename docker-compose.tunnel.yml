@@ -19,7 +19,9 @@ services:
     # outage where QUIC (UDP) connections repeatedly wedged for hours with no
     # reconnect activity, taking the tunnel offline (Cloudflare error 1033).
     # HTTP/2 (TCP) has proven far more resilient on this network path.
-    command: tunnel --no-autoupdate --protocol http2 run
+    # --metrics 0.0.0.0:20241: pin the metrics/readiness server to a known address
+    # so the healthcheck below can probe cloudflared's /ready endpoint.
+    command: tunnel --no-autoupdate --protocol http2 --metrics 0.0.0.0:20241 run
     # dns: bypass the compose network's Podman-managed aardvark-dns resolver for
     # cloudflared's own upstream lookups (argotunnel.com SRV/feature records) —
     # same 2026-07-17 outage: aardvark-dns intermittently timed out
@@ -31,6 +33,24 @@ services:
       - 1.0.0.1
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN (see make tunnel-provision)}
+    # healthcheck: /ready reports the number of registered edge connections and
+    # returns HTTP 200 only when >=1 connection is live (503 otherwise). Paired
+    # with `restart: unless-stopped`, this makes Podman auto-recover cloudflared
+    # within ~a minute if all tunnel connections wedge — instead of waiting out
+    # cloudflared's own exponential backoff, which during the 2026-07-17 outage
+    # stretched to ~22 minutes of downtime (Cloudflare error 1033). The image
+    # ships no curl/wget, so we probe with cloudflared's built-in busybox-less
+    # binary via /proc-free TCP check using the metrics server.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cloudflared --version >/dev/null 2>&1 && wget -q -O - http://127.0.0.1:20241/ready >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       app:
         condition: service_started
