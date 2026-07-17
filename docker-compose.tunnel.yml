@@ -15,7 +15,20 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
+    # --protocol http2: pinned over the default QUIC auto-detect after a 2026-07-17
+    # outage where QUIC (UDP) connections repeatedly wedged for hours with no
+    # reconnect activity, taking the tunnel offline (Cloudflare error 1033).
+    # HTTP/2 (TCP) has proven far more resilient on this network path.
+    command: tunnel --no-autoupdate --protocol http2 run
+    # dns: bypass the compose network's Podman-managed aardvark-dns resolver for
+    # cloudflared's own upstream lookups (argotunnel.com SRV/feature records) —
+    # same 2026-07-17 outage: aardvark-dns intermittently timed out
+    # ("no such host" / "i/o timeout" on 10.89.x.1:53), which made cloudflared
+    # fail edge discovery and self-restart mid-flight. 1.1.1.1/1.0.0.1 are
+    # Cloudflare's own resolvers, so no third party is added to the trust chain.
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN (see make tunnel-provision)}
     depends_on:
