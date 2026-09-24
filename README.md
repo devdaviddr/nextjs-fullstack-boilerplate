@@ -35,6 +35,8 @@ An opinionated, batteries-included template built on **Next.js 16** (App Router,
 
 Everything is verified end to end — auth flow, container, and PWA all proven working, not just scaffolded. See **[Features](docs/features.md)** for the full list.
 
+Want to chat with your own documents? **[nextjs-rag-boilerplate](https://github.com/devdaviddr/nextjs-rag-boilerplate)** builds a full RAG app on top of this template.
+
 ## Quick start
 
 **Prerequisites:** Node ≥ 20.9 (22 recommended) · [pnpm](https://pnpm.io) (`corepack enable`) · Docker
